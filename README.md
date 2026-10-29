@@ -161,7 +161,7 @@ SECTION_TITLES: ['現在の作業について', '自動化したい作業', '今
 
 - `content/items.md` や `js/config.js` は、GitHub の画面でファイルを開き ✏（Edit）で直して「Commit changes」を押せば、1〜2分で反映されます。
 - 画像を足すときは、`content/images` フォルダを開いて「Add file」→「Upload files」。
-- `js` や `css` の中のファイルを変えたときは、`index.html` の `?v=10` をすべて `?v=11` のように1つ増やしてください（古いファイルがブラウザに残るのを防ぎます）。
+- `js` や `css` の中のファイルを変えたときは、`index.html` の `?v=11` をすべて `?v=12` のように1つ増やしてください（古いファイルがブラウザに残るのを防ぎます）。
 
 ---
 
