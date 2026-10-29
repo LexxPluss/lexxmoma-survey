@@ -131,6 +131,11 @@ SECTION_TITLES: ['現在の作業について', '自動化したい作業', '今
 
 ## 4. GitHub Pages での公開
 
+**公開済み**：https://lexxpluss.github.io/lexxmoma-survey/ （リポジトリ：https://github.com/LexxPluss/lexxmoma-survey ）
+
+- 更新するときは、GitHub の画面でファイルを直接直すか（4-4）、パソコンのこのフォルダで直して `git push` します。1〜2分で反映されます。
+- 以下の 4-1〜4-3 は、新しく別の場所に公開するときの手順です。
+
 ### 4-1. 置き場所（リポジトリ）を作る
 
 1. https://github.com にログインし、右上の **「＋」→「New repository」** を押します。
