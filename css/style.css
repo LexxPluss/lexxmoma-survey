@@ -166,10 +166,10 @@ body.solo .newwin { display: none; }
 .col-info .cards { grid-template-columns: 1fr; gap: 16px; }
 .col-info .card { flex-direction: column; }
 /* 右側は図を見せるので、画像は横いっぱい・縦横比はそのまま */
-.col-info .card-img { aspect-ratio: auto; background: #fff; border-bottom: 1px solid var(--line); }
+.col-info .card-img { aspect-ratio: auto; background: #fff; border-top: 1px solid var(--line); }
 .col-info .card-img img { height: auto; object-fit: contain; }
 a.card-img { display: block; cursor: zoom-in; }
-.col-info .card-body { padding: 14px 16px 16px; }
+.col-info .card-body { padding: 14px 16px 12px; }
 .col-info .card h3 { font-size: 1rem; margin-bottom: 4px; }
 .col-info .chips { margin: 0 0 14px; }
 .form-holder .lead { font-size: .85rem; margin: 0 0 8px; }
@@ -209,7 +209,8 @@ a.card-img { display: block; cursor: zoom-in; }
 .col-info .card.card-embed { flex-direction: column; }
 .card-video { background: #000; }
 .card-video video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
-.card-embeds { border-bottom: 1px solid var(--line); background: #fff; }
+.card-embeds { border-top: 1px solid var(--line); background: #fff; }
+.card-foot { padding: 4px 16px 10px; }
 .card-embed-box + .card-embed-box { border-top: 1px solid var(--line); }
 .card-embed-box iframe { display: block; width: 100%; border: 0; }
 .embed-open { display: inline-block; margin-top: 6px; font-size: .82rem; text-decoration: none; }

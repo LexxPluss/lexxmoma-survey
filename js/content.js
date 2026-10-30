@@ -50,7 +50,7 @@ var Content = (function () {
     var h = parseInt(String(c.embedH).replace(/[０-９]/g, function (d) {
       return String.fromCharCode(d.charCodeAt(0) - 0xFEE0);
     }), 10) || 560;
-    // 動画・画像と同じく、カードの上に出す。「埋め込み: a.html, b.html」のように並べると、上から順に出す
+    // 動画・画像と同じく、文章の下に出す。「埋め込み: a.html, b.html」のように並べると、上から順に出す
     return '<div class="card-embeds">' + c.embed.split(/\s*[,、]\s*/).filter(Boolean).map(function (src) {
       return '<div class="card-embed-box"><iframe src="' + esc(src) + '" title="' + esc(c.title) + '" loading="lazy"' +
         ' style="height:' + h + 'px"></iframe></div>';
@@ -273,16 +273,17 @@ var Content = (function () {
       return;
     }
     box.innerHTML = cards.map(function (c, i) {
+      // 見出し・文章を先に、その下に動画・埋め込み・画像
       return '<article class="card' + (c.embed ? ' card-embed' : '') + '" data-i="' + i + '">' +
+        '<div class="card-body"><div class="card-meta">' +
+        (c.kind ? '<span class="tag ' + tagClass(c.kind) + '">' + esc(c.kind) + '</span>' : '') +
+        (c.when ? '<span class="card-when">' + esc(c.when) + '</span>' : '') +
+        '</div><h3>' + esc(c.title) + '</h3><div class="card-text">' + c.html + '</div></div>' +
         (c.video ? videoHtml(c) : '') +
         (c.embed ? embedHtml(c) : '') +
         (c.image && !c.embed && !c.video ? '<a class="card-img" href="' + esc(c.image) + '" target="_blank" rel="noopener" title="大きく表示">' +
           '<img src="' + esc(c.image) + '" alt="' + esc(c.title) + '" loading="' + (i < 3 ? 'eager' : 'lazy') + '"></a>' : '') +
-        '<div class="card-body"><div class="card-meta">' +
-        (c.kind ? '<span class="tag ' + tagClass(c.kind) + '">' + esc(c.kind) + '</span>' : '') +
-        (c.when ? '<span class="card-when">' + esc(c.when) + '</span>' : '') +
-        '</div><h3>' + esc(c.title) + '</h3><div class="card-text">' + c.html + '</div>' +
-        (c.embed ? embedLinks(c) : '') + '</div></article>';
+        (c.embed ? '<div class="card-foot">' + embedLinks(c) + '</div>' : '') + '</article>';
     }).join('') + '<p id="vision-empty" class="notice" hidden>このセクションに関連する内容はありません。</p>';
     box.querySelectorAll('.card-embed-box iframe').forEach(fitToContent);
 
