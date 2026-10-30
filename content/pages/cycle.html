@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ピッキング → 移動 → プレイスの時間</title>
+<style>
+  :root { --main: #0068B7; --main-pale: #e8f1f9; --accent: #3EB370; --accent-d: #23864d; --text: #1f2933; --sub: #5f6b76; --line: #e2e7ec; --other: #8fa1b0; --arm: #f0b429; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 12px 14px; background: #fff; color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif; font-size: 13px; line-height: 1.5; }
+  .ctrl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 8px 10px; border-radius: 8px; background: #f6f8fa; }
+  .ctrl label { display: flex; align-items: center; gap: 6px; font-size: .82rem; }
+  .ctrl input[type=range] { width: 120px; accent-color: var(--main); }
+  .ctrl input[type=number] { font: inherit; width: 4.5em; padding: .15em .4em; border: 1px solid var(--line); border-radius: 6px; text-align: right; }
+  .ctrl b { color: var(--main); min-width: 3.2em; }
+  button { font: inherit; font-size: .8rem; padding: .2em .9em; border: 1px solid var(--main); border-radius: 999px; background: #fff; color: var(--main); cursor: pointer; margin-left: auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 0 2px; font-size: .72rem; color: var(--sub); }
+  .legend i { display: inline-block; width: 12px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .m { margin-top: 10px; }
+  .head { display: flex; align-items: baseline; gap: 8px; }
+  .head .name { font-weight: 700; font-size: .85rem; }
+  .head .name small { font-weight: 400; color: var(--sub); font-size: .72rem; margin-left: .3em; }
+  .head .t { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ours .name, .ours .t { color: var(--main); }
+  .m svg { display: block; width: 100%; height: 34px; margin-top: 2px; }
+  .diff { font-size: .72rem; color: var(--sub); text-align: right; min-height: 1.1em; }
+  .diff b { color: #b4541a; }
+  .note { margin: 10px 0 0; padding-left: 1.1em; font-size: .72rem; color: var(--sub); }
+  .note li { margin: 2px 0; }
+  #stage3d { position: relative; height: 260px; margin: 0 0 8px; border-radius: 8px; overflow: hidden; background: #f4f7fa; }
+  #stage3d canvas { display: block; }
+  #stage3d .speed { position: absolute; right: 8px; top: 6px; font-size: .7rem; color: var(--sub); background: rgba(255,255,255,.85); padding: 0 6px; border-radius: 4px; }
+  .tag3d { position: absolute; left: 0; top: 0; padding: 1px 6px; border-radius: 4px; background: rgba(255,255,255,.92); border: 1px solid #b7c3cd; color: #3f5566; font-size: 10.5px; line-height: 1.4; white-space: nowrap; font-variant-numeric: tabular-nums; pointer-events: none; }
+  .tag3d.ours { border-color: var(--main); color: var(--main); font-weight: 700; }
+  .tag3d.done { background: var(--accent-d); border-color: var(--accent-d); color: #fff; }
+  @media (max-width: 420px) { #stage3d { height: 220px; } .tag3d { font-size: 9.5px; } }
+</style>
+</head>
+<body>
+<div id="stage3d"><span class="speed" id="speedV"></span></div>
+<div class="ctrl">
+  <label>移動距離 <input id="dist" type="range" min="1" max="30" step="1" value="10"> <b id="distV"></b></label>
+  <label>1日の回数 <input id="count" type="number" min="1" step="10" value="300"> 回</label>
+  <button id="play" type="button">再生</button>
+</div>
+<div class="legend">
+  <span><i style="background:var(--arm)"></i>アーム：つかむ・置く</span>
+  <span><i style="background:var(--main)"></i>台車：移動（高さ＝速さ）</span>
+  <span><i style="background:#d9f0e1"></i>同時に動いている時間</span>
+</div>
+<div id="rows"></div>
+<ul class="note" id="note"></ul>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="cycle3d.js?v=4"></script>
+<script>
+  // ===== ここを書き換えます =====
+  var ARM = {
+    pick: 4.0,      // つかむ動作の時間（秒）
+    place: 4.0,     // 置く動作の時間（秒）
+    overlap: 1.5    // そのうち、移動と重ねられる時間（つかんだ後の引き戻し・置く前の近づけ。秒）
+  };
+  var MODELS = [
+    { name: 'LexxMoMa R1', short: 'R1', sub: '同時動作あり', ours: true, v: 2.0, a: 1.5, sync: true },
+    { name: 'LexxMoMa R1', short: 'R1', sub: '同時動作なし', ours: true, v: 2.0, a: 1.5, sync: false },
+    { name: 'オムロン LD-90型', short: 'LD-90', v: 1.35, a: 1.0, sync: false },
+    { name: 'オムロン LD-250型', short: 'LD-250', v: 1.20, a: 0.6, sync: false },
+    { name: '明電舎 RocoMo-V', short: 'RocoMo-V', v: 1.00, a: 1.0, aAssumed: true, sync: false }
+  ];
+  var NOTES = [
+    '上の図の機体は LexxMoMa の形を簡略化したものです。他機種も比べやすさのため同じ形（灰色）で表しており、実際の外観とは異なります。',
+    'つかむ・置くの時間はどの機種も同じとし、各 ' + ARM.pick + '秒のうち ' + ARM.overlap + '秒は移動と重ねられると仮定しています。',
+    '他社機は、走行とアームの同時動作が公開仕様で確認できないため、同時動作なしで計算しています。',
+    '台車の速さ・加速度はカタログ上の上限値です（オムロンは台車単体の初期値）。RocoMo-V は加速度の公開値がないため 1.0m/s² と仮定しています。実際の運用では、現場の安全条件によって下がります。'
+  ];
+  var PLAY_SPEED = 2;   // 再生の速さ（実時間の何倍で見せるか）
+  // ==============================
+
+  var S3 = window.MomaScene ? MomaScene(document.getElementById('stage3d'), MODELS, ARM) : null;
+  if (!S3) document.getElementById('stage3d').hidden = true;
+  document.getElementById('speedV').textContent = PLAY_SPEED + '倍速';
+  var NS = 'http://www.w3.org/2000/svg', VMAX = Math.max.apply(null, MODELS.map(function (m) { return m.v; }));
+
+  // 距離 d を、最高速度 v・加速度 a（減速も同じ）で走る時間と、そのときの最高到達速度
+  function travel(d, v, a) {
+    var dAcc = v * v / a;                 // 加速と減速で使う距離
+    if (d >= dAcc) return { t: d / v + v / a, vp: v, ta: v / a };
+    var vp = Math.sqrt(d * a);
+    return { t: 2 * vp / a, vp: vp, ta: vp / a };
+  }
+  function plan(m, d) {
+    var tr = travel(d, m.v, m.a);
+    var o = m.sync ? Math.min(ARM.overlap, tr.t / 2) : 0;
+    var moveStart = ARM.pick - o, moveEnd = moveStart + tr.t, placeStart = moveEnd - o;
+    return { tr: tr, o: o, moveStart: moveStart, moveEnd: moveEnd, placeStart: placeStart, total: placeStart + ARM.place };
+  }
+
+  var rows = document.getElementById('rows');
+  var view = MODELS.map(function (m) {
+    var box = document.createElement('div');
+    box.className = 'm' + (m.ours ? ' ours' : '');
+    box.innerHTML = '<div class="head"><span class="name"></span><span class="t"></span></div>' +
+      '<svg viewBox="0 0 1000 34" preserveAspectRatio="none"></svg><div class="diff"></div>';
+    box.querySelector('.name').innerHTML = m.name.replace(/&/g, '&amp;') + (m.sub ? '<small>' + m.sub + '</small>' : '') +
+      (m.aAssumed ? '<small>加速度は仮定</small>' : '');
+    rows.appendChild(box);
+    return { m: m, svg: box.querySelector('svg'), t: box.querySelector('.t'), diff: box.querySelector('.diff') };
+  });
+  document.getElementById('note').innerHTML = NOTES.map(function (n) { return '<li>' + n + '</li>'; }).join('');
+
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    parent.appendChild(e);
+    return e;
+  }
+
+  var plans, scale, maxT;
+  function build() {
+    var d = Number(document.getElementById('dist').value);
+    document.getElementById('distV').textContent = d + ' m';
+    plans = view.map(function (r) { return plan(r.m, d); });
+    maxT = Math.max.apply(null, plans.map(function (p) { return p.total; }));
+    scale = 1000 / maxT;
+    var best = plans[0].total, count = Math.max(1, Number(document.getElementById('count').value) || 0);
+    view.forEach(function (r, i) {
+      var p = plans[i], s = r.svg, x = function (t) { return (t * scale).toFixed(1); };
+      s.innerHTML = '';
+      var clip = 'c' + i;
+      var cp = el('clipPath', { id: clip }, el('defs', {}, s));
+      r.clipRect = el('rect', { x: 0, y: 0, width: 1000, height: 34 }, cp);
+      var g = el('g', { 'clip-path': 'url(#' + clip + ')' }, s);
+      el('rect', { x: 0, y: 0, width: x(p.total), height: 34, fill: '#f1f4f7' }, g);
+      // 同時に動いている時間（背景を緑に）
+      if (p.o > 0) {
+        el('rect', { x: x(p.moveStart), y: 0, width: x(p.o), height: 34, fill: '#d9f0e1' }, g);
+        el('rect', { x: x(p.placeStart), y: 0, width: x(p.o), height: 34, fill: '#d9f0e1' }, g);
+      }
+      // アーム（上の細い帯）
+      el('rect', { x: 0, y: 2, width: x(ARM.pick), height: 9, rx: 2, fill: '#f0b429' }, g);
+      el('rect', { x: x(p.placeStart), y: 2, width: x(ARM.place), height: 9, rx: 2, fill: '#f0b429' }, g);
+      // 台車（速さの形：加速 → 一定 → 減速）
+      var base = 32, h = 18, tp = p.tr, top = base - h * tp.vp / VMAX;
+      var pts = [[p.moveStart, base], [p.moveStart + tp.ta, top], [p.moveEnd - tp.ta, top], [p.moveEnd, base]];
+      el('polygon', { points: pts.map(function (q) { return x(q[0]) + ',' + q[1].toFixed(1); }).join(' '),
+                      fill: r.m.ours ? '#0068B7' : '#8fa1b0' }, g);
+      r.cursor = el('line', { x1: 0, y1: 0, x2: 0, y2: 34, stroke: '#1f2933', 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke', opacity: 0 }, s);
+      r.total = p.total;
+      var gap = p.total - best;
+      r.diffText = i === 0 ? '' : '1回あたり <b>+' + gap.toFixed(1) + '秒</b>（1日 ' + count + '回で 約' + Math.round(gap * count / 60) + '分の差）';
+    });
+    if (S3) S3.build(d, plans);
+    show(raf ? 0 : Infinity);
+    if (raf) play();
+  }
+
+  function show(t) {
+    view.forEach(function (r) {
+      var tt = Math.min(t, r.total), done = t >= r.total;
+      r.clipRect.setAttribute('width', (tt * scale).toFixed(1));
+      r.cursor.setAttribute('x1', tt * scale); r.cursor.setAttribute('x2', tt * scale);
+      r.cursor.setAttribute('opacity', done ? 0 : 1);
+      r.t.textContent = tt.toFixed(1) + ' 秒';
+      r.diff.innerHTML = done ? r.diffText : '';
+    });
+    if (S3) S3.update(Math.min(t, maxT));
+  }
+
+  var raf = null;
+  var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function play() {
+    if (raf) cancelAnimationFrame(raf);
+    var start = null;
+    (function frame(now) {
+      if (start == null) start = now;
+      var t = Math.max(0, now - start) / 1000 * PLAY_SPEED;
+      if (t > maxT + 2.5 * PLAY_SPEED) { start = now; t = 0; }   // 終わったら少し止めて、最初から繰り返す
+      show(t);
+      raf = visible ? requestAnimationFrame(frame) : null;
+    })(performance.now());
+  }
+  // 画面に見えていないときは止めておく（アンケートの画面を重くしないため）
+  var visible = true;
+  if (window.IntersectionObserver) new IntersectionObserver(function (es) {
+    var was = visible; visible = es[0].isIntersecting;
+    if (visible && !was && !still) play();
+  }).observe(document.body);
+
+  document.getElementById('dist').addEventListener('input', build);
+  document.getElementById('count').addEventListener('input', build);
+  document.getElementById('play').addEventListener('click', play);
+  build();
+  if (!still) play();
+</script>
+</body>
+</html>

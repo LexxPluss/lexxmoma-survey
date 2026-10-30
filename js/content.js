@@ -55,6 +55,19 @@ var Content = (function () {
       '<a class="embed-open" href="' + esc(c.embed) + '" target="_blank" rel="noopener">大きく開く ↗</a>';
   }
 
+  // 同じサイト内のページなら、中身の高さに合わせて枠を伸び縮みさせる（「高さ:」は読み込むまでの仮の高さ）
+  function fitToContent(frame) {
+    frame.addEventListener('load', function () {
+      var body;
+      try { body = frame.contentDocument && frame.contentDocument.body; } catch (e) { return; }
+      if (!body || !window.ResizeObserver) return;
+      new ResizeObserver(function () {
+        var h = Math.ceil(body.getBoundingClientRect().height);
+        if (h > 0) frame.style.height = h + 'px';
+      }).observe(body);
+    });
+  }
+
   // 「1」「1, 2」「送信後」などを読む
   function parseSections(text) {
     var out = [];
@@ -254,6 +267,7 @@ var Content = (function () {
         '</div><h3>' + esc(c.title) + '</h3><div class="card-text">' + c.html + '</div>' +
         (c.embed ? embedHtml(c) : '') + '</div></article>';
     }).join('') + '<p id="vision-empty" class="notice" hidden>このセクションに関連する内容はありません。</p>';
+    box.querySelectorAll('.card-embed-box iframe').forEach(fitToContent);
 
     var kinds = [];
     cards.forEach(function (c) { if (c.kind && kinds.indexOf(c.kind) < 0) kinds.push(c.kind); });
