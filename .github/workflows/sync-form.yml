@@ -1,0 +1,37 @@
+# Google フォームの質問を読み取り、変わっていれば js/questions.js を更新して公開する。
+# 1時間ごとに自動で動くほか、GitHub の「Actions」タブから手動でも実行できる。
+name: フォームの質問を反映
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-form
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: フォームを読み取る
+        run: python tools/sync_form.py
+      - name: 変わっていれば保存して公開
+        run: |
+          if git diff --quiet -- js/questions.js; then
+            echo "変更なし"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/questions.js
+          git commit -m "フォームの質問を反映"
+          git push
