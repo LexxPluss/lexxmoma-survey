@@ -246,7 +246,7 @@ window.MomaScene = function (host, MODELS, ARM) {
       var q = ln.R.g.position.clone().add(V3(ln.R.rootX, 2.0, -0.2)).project(camera);
       var p = ln.p, done = t >= p.total;
       var both = p.o > 0 && ((t > p.moveStart && t < p.moveStart + p.o) || (t > p.placeStart && t < p.moveEnd));
-      ln.tag.textContent = (ln.m.short || ln.m.name) + '  ' + Math.min(t, p.total).toFixed(1) + '秒' + (both ? '　走りながらアーム作業' : '');
+      ln.tag.textContent = (ln.m.short || ln.m.name) + '  ' + Math.min(t, p.total).toFixed(1) + '秒' + (both ? '　走りながら作業' : '');
       ln.tag.classList.toggle('done', done);
       ln.tag.classList.toggle('both', both);
       var half = ln.tag.offsetWidth / 2, px = clamp((q.x + 1) / 2 * w, half + 4, w - half - 4);   // 枠の外にはみ出さない

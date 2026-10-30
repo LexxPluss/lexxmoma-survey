@@ -16,8 +16,18 @@
   .tag3d.ours { border-color: var(--main); color: var(--main); font-weight: 700; }
   .tag3d.both { background: #fff4dc; border-color: #f0b429; color: #8a5a00; }
   .tag3d.done { background: var(--accent-d); border-color: var(--accent-d); color: #fff; }
-  .msg { margin: 8px 0; padding: 8px 10px; border-radius: 8px; background: #e9f6ee; border-left: 4px solid var(--accent); font-size: .85rem; }
-  .msg b { color: var(--accent-d); font-size: 1.05em; }
+  .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+  .kpi { padding: 6px 8px; border-radius: 8px; background: var(--main-pale); text-align: center; line-height: 1.25; }
+  .kpi .l { display: block; font-size: .7rem; color: var(--sub); }
+  .kpi .v { display: block; margin: 2px 0; font-size: 1.35rem; font-weight: 800; color: var(--main); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .kpi .v small { font-size: .6em; font-weight: 700; }
+  .kpi .c { display: block; font-size: .68rem; color: var(--sub); }
+  .kpi.win { background: #e9f6ee; }
+  .kpi.win .v { color: var(--accent-d); }
+  #first { position: absolute; left: 8px; top: 6px; z-index: 1; padding: 2px 10px; border-radius: 999px; background: var(--accent-d); color: #fff; font-size: .78rem; font-weight: 700; opacity: 0; transition: opacity .2s; }
+  #first.on { opacity: 1; }
+  td.yes { color: var(--accent-d); font-weight: 800; font-size: 1.1rem; text-align: center; }
+  td.no { color: #b7c3cd; text-align: center; }
   table { width: 100%; border-collapse: collapse; font-size: .8rem; }
   th, td { padding: 5px 5px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
   thead th { font-size: .7rem; color: var(--sub); font-weight: 400; white-space: nowrap; }
@@ -45,14 +55,14 @@
   summary { cursor: pointer; }
   details ul { margin: 4px 0 0; padding-left: 1.1em; }
   td.name .s { display: none; }
-  @media (max-width: 420px) { #stage3d { height: 220px; } .tag3d { font-size: 9.5px; } th, td { padding: 4px 3px; } td.name .l { display: none; } td.name .s { display: block; } }
+  @media (max-width: 420px) { .kpi { padding: 5px 4px; } .kpi .v { font-size: 1.05rem; } .kpi .l, .kpi .c { font-size: .62rem; } #stage3d { height: 220px; } .tag3d { font-size: 9.5px; } th, td { padding: 4px 3px; } td.name .l { display: none; } td.name .s { display: block; } }
 </style>
 </head>
 <body>
-<div id="stage3d"><span class="speed" id="speedV"></span></div>
-<div class="msg" id="msg"></div>
+<div class="kpis" id="kpis"></div>
+<div id="stage3d"><span class="speed" id="speedV"></span><span id="first">R1 が先に完了</span></div>
 <table>
-  <thead><tr><th>機種</th><th>最高速度<br>m/s</th><th>加速度<br>m/s²</th><th style="text-align:right">1回の時間</th></tr></thead>
+  <thead><tr><th>機種</th><th>最高速度<br>m/s</th><th>加速度<br>m/s²</th><th style="text-align:center">走りながら<br>作業</th><th style="text-align:right">1回の時間</th></tr></thead>
   <tbody id="rows"></tbody>
 </table>
 <div class="ctrl">
@@ -65,7 +75,7 @@
   <ul id="note"></ul>
 </details>
 <script src="vendor/three.min.js?r128"></script>
-<script src="cycle3d.js?v=8"></script>
+<script src="cycle3d.js?v=9"></script>
 <script>
   // ===== ここを書き換えます =====
   var ARM = {
@@ -81,7 +91,7 @@
     { name: '明電舎 RocoMo-V', short: 'RocoMo-V', body: 'rocomo', v: 1.00, a: null, aCalc: 1.0, sync: false, payload: '手首部 20kg', vNote: '横行 0.50' }
   ];
   var NOTES = [
-    '各社の公開仕様をもとに LexxPluss で整理（2026年10月時点）。R1 の加速度は最新の社内仕様値です。',
+    '各社の公開仕様をもとに LexxPluss で整理（2026年10月時点）。R1 の加速度は最新の社内仕様値です。「―」は公開仕様で確認できないもの、「非公開」は公開値がないものです。',
     '他社の加速度は台車単体の上限設定の初期値で、アームを載せた状態での保証値ではありません。RocoMo-V は加速度の公開値がないため、計算では 1.0m/s² と仮定しています。',
     'つかむ・置くの時間はどの機種も同じとし、各 ' + ARM.pick + '秒のうち ' + ARM.overlap + '秒は移動と重ねられると仮定しています。他社機は走行とアームの同時動作が公開仕様で確認できないため、同時動作なしで計算しています。',
     'LexxMoMa の形は実機に寄せたもの、他機種は公開されている寸法・構成をもとに簡略化したもので、実際の外観とは異なります。',
@@ -112,7 +122,7 @@
   var vMax = Math.max.apply(null, MODELS.map(function (m) { return m.v; }));
   var aMax = Math.max.apply(null, MODELS.map(function (m) { return m.a || 0; }));
   function cell(v, max, note) {
-    if (v == null) return '<td><span class="na">公開値<br>未確認</span></td>';
+    if (v == null) return '<td><span class="na">非公開</span></td>';
     return '<td class="num">' + v.toFixed(2).replace(/0$/, '') + (note ? ' <span class="na">' + note + '</span>' : '') +
       '<span class="mini"><i style="width:' + (v / max * 100).toFixed(0) + '%"></i></span></td>';
   }
@@ -120,10 +130,10 @@
   var view = MODELS.map(function (m) {
     var tr = document.createElement('tr');
     if (m.ours) tr.className = 'ours';
-    tr.innerHTML = '<td class="name"><b class="l"></b><b class="s"></b><small></small></td>' + cell(m.v, vMax, m.vNote) + cell(m.a, aMax) + '<td class="time num"></td>';
+    tr.innerHTML = '<td class="name"><b class="l"></b><b class="s"></b></td>' + cell(m.v, vMax) + cell(m.a, aMax) +
+      (m.sync ? '<td class="yes">◯</td>' : '<td class="no">―</td>') + '<td class="time num"></td>';
     tr.querySelector('b.l').textContent = m.name;
     tr.querySelector('b.s').textContent = m.short;
-    tr.querySelector('small').textContent = '可搬 ' + m.payload + '・同時動作 ' + (m.sync ? 'あり' : '公開仕様で未確認');
     tbody.appendChild(tr);
     return { m: m, tr: tr, time: tr.querySelector('.time') };
   });
@@ -139,9 +149,16 @@
     var ours = plans[0].total, gaps = plans.slice(1).map(function (p) { return p.total - ours; });
     var lo = Math.min.apply(null, gaps), hi = Math.max.apply(null, gaps);
     var mins = function (s) { return Math.round(s * count / 60); };
-    document.getElementById('msg').innerHTML =
-      '移動 ' + d + 'm の「つかむ → 運ぶ → 置く」1回は、LexxMoMa R1 なら <b>' + ours.toFixed(1) + '秒</b>。' +
-      '他の機種より <b>' + lo.toFixed(1) + '〜' + hi.toFixed(1) + '秒</b>短く、1日 ' + count + '回くり返すと <b>約' + mins(lo) + '〜' + mins(hi) + '分</b>の差になります。';
+    var others = plans.slice(1).map(function (p) { return p.total; });
+    var oLo = Math.min.apply(null, others), oHi = Math.max.apply(null, others);
+    var range = function (a, b, f) { return a.toFixed(f) === b.toFixed(f) ? a.toFixed(f) : a.toFixed(f) + '〜' + b.toFixed(f); };
+    document.getElementById('kpis').innerHTML =
+      '<div class="kpi"><span class="l">1回の時間（' + d + 'm）</span><span class="v">' + ours.toFixed(1) + '<small>秒</small></span>' +
+        '<span class="c">他社 ' + range(oLo, oHi, 1) + '秒</span></div>' +
+      '<div class="kpi win"><span class="l">運べる回数</span><span class="v">' + range(oLo / ours, oHi / ours, 1) + '<small>倍</small></span>' +
+        '<span class="c">同じ時間で・他社比</span></div>' +
+      '<div class="kpi win"><span class="l">1日 ' + count + '回で</span><span class="v">' + range(mins(lo), mins(hi), 0) + '<small>分</small></span>' +
+        '<span class="c">短くなる</span></div>';
     view.forEach(function (r, i) {
       r.final = plans[i].total;
       r.gap = i === 0 ? '' : '<small>+' + (plans[i].total - ours).toFixed(1) + '秒</small>';
@@ -157,6 +174,7 @@
       r.time.innerHTML = Math.min(t, r.final).toFixed(1) + '秒' + (done ? r.gap : '');
       r.tr.classList.toggle('done', done);
     });
+    document.getElementById('first').classList.toggle('on', t >= view[0].final && t < maxT + 2 * PLAY_SPEED);
     if (S3) S3.update(Math.min(t, maxT));
   }
 
