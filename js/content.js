@@ -5,7 +5,7 @@ var Content = (function () {
   'use strict';
 
   var CFG = window.SURVEY_CONFIG || {};
-  var KEYS = { '区分': 'kind', '時期': 'when', '画像': 'image', 'セクション': 'section', '質問': 'question', '埋め込み': 'embed', '高さ': 'embedH' };
+  var KEYS = { '区分': 'kind', '時期': 'when', '画像': 'image', 'セクション': 'section', '質問': 'question', '埋め込み': 'embed', '高さ': 'embedH', '動画': 'video' };
   var DONE = 'done'; // 送信後
 
   var state = {
@@ -50,9 +50,12 @@ var Content = (function () {
     var h = parseInt(String(c.embedH).replace(/[０-９]/g, function (d) {
       return String.fromCharCode(d.charCodeAt(0) - 0xFEE0);
     }), 10) || 560;
-    return '<div class="card-embed-box"><iframe src="' + esc(c.embed) + '" title="' + esc(c.title) + '" loading="lazy"' +
-      ' style="height:' + h + 'px"></iframe></div>' +
-      '<a class="embed-open" href="' + esc(c.embed) + '" target="_blank" rel="noopener">大きく開く ↗</a>';
+    // 「埋め込み: a.html, b.html」のように並べると、上から順に出す
+    return c.embed.split(/\s*[,、]\s*/).filter(Boolean).map(function (src) {
+      return '<div class="card-embed-box"><iframe src="' + esc(src) + '" title="' + esc(c.title) + '" loading="lazy"' +
+        ' style="height:' + h + 'px"></iframe></div>' +
+        '<a class="embed-open" href="' + esc(src) + '" target="_blank" rel="noopener">大きく開く ↗</a>';
+    }).join('');
   }
 
   // 同じサイト内のページなら、中身の高さに合わせて枠を伸び縮みさせる（「高さ:」は読み込むまでの仮の高さ）
@@ -66,6 +69,12 @@ var Content = (function () {
         if (h > 0) frame.style.height = h + 'px';
       }).observe(body);
     });
+  }
+
+  // 動画は音なしで自動再生・くり返し（同じ名前の .jpg があれば読み込み中に表示）
+  function videoHtml(c) {
+    return '<div class="card-video"><video src="' + esc(c.video) + '" poster="' + esc(c.video.replace(/\.mp4(\?.*)?$/, '.jpg')) + '"' +
+      ' autoplay muted loop playsinline preload="metadata" aria-label="' + esc(c.title) + '"></video></div>';
   }
 
   // 「1」「1, 2」「送信後」などを読む
@@ -95,7 +104,7 @@ var Content = (function () {
     intro.html = bodyHtml(head);
     parts.slice(1).forEach(function (chunk) {
       var lines = chunk.split('\n');
-      var card = { title: lines.shift().trim(), kind: '', when: '', image: '', section: '', question: '', embed: '', embedH: '', body: [] };
+      var card = { title: lines.shift().trim(), kind: '', when: '', image: '', section: '', question: '', embed: '', embedH: '', video: '', body: [] };
       var inHead = true;
       lines.forEach(function (line) {
         var m = line.match(/^([^:：]{1,5})[:：]\s*(.*)$/);
@@ -106,7 +115,8 @@ var Content = (function () {
         card.body.push(line);
       });
       card.image = resolve(card.image, baseDir);
-      card.embed = resolve(card.embed, baseDir);
+      card.video = resolve(card.video, baseDir);
+      card.embed = card.embed.split(/\s*[,、]\s*/).filter(Boolean).map(function (e) { return resolve(e, baseDir); }).join(',');
       card.sections = parseSections(card.section);
       card.questions = (card.question.replace(/[ＱＱ]/g, 'Q').replace(/[０-９]/g, function (d) {
         return String.fromCharCode(d.charCodeAt(0) - 0xFEE0);
@@ -259,7 +269,8 @@ var Content = (function () {
     }
     box.innerHTML = cards.map(function (c, i) {
       return '<article class="card' + (c.embed ? ' card-embed' : '') + '" data-i="' + i + '">' +
-        (c.image && !c.embed ? '<a class="card-img" href="' + esc(c.image) + '" target="_blank" rel="noopener" title="大きく表示">' +
+        (c.video ? videoHtml(c) : '') +
+        (c.image && !c.embed && !c.video ? '<a class="card-img" href="' + esc(c.image) + '" target="_blank" rel="noopener" title="大きく表示">' +
           '<img src="' + esc(c.image) + '" alt="' + esc(c.title) + '" loading="' + (i < 3 ? 'eager' : 'lazy') + '"></a>' : '') +
         '<div class="card-body"><div class="card-meta">' +
         (c.kind ? '<span class="tag ' + tagClass(c.kind) + '">' + esc(c.kind) + '</span>' : '') +

@@ -207,6 +207,8 @@ a.card-img { display: block; cursor: zoom-in; }
 
 /* 別の HTML ページを埋め込んだカード */
 .col-info .card.card-embed { flex-direction: column; }
+.card-video { background: #000; }
+.card-video video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
 .card-embed-box { margin-top: 8px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
 .card-embed-box iframe { display: block; width: 100%; border: 0; }
 .embed-open { display: inline-block; margin-top: 6px; font-size: .82rem; text-decoration: none; }
