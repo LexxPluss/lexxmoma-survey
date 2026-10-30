@@ -151,7 +151,7 @@ var Content = (function () {
   function tagClass(kind) {
     if (kind.indexOf('構想') >= 0 || kind.indexOf('展開') >= 0) return 'tag-vision';
     if (kind.indexOf('ヒント') >= 0) return 'tag-hint';
-    if (kind.indexOf('事例') >= 0 || kind.indexOf('特徴') >= 0) return 'tag-case';
+    if (kind.indexOf('事例') >= 0 || kind.indexOf('特徴') >= 0 || kind.indexOf('使いどころ') >= 0) return 'tag-case';
     if (kind.indexOf('結論') >= 0) return 'tag-vision';
     return 'tag-other';
   }
