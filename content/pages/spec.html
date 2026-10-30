@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>速さと加速の比較</title>
+<style>
+  :root { --main: #0068B7; --main-pale: #e8f1f9; --accent: #3EB370; --accent-d: #23864d; --text: #1f2933; --sub: #5f6b76; --line: #e2e7ec; --other: #b7c3cd; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 12px 14px; background: #fff; color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif; font-size: 13px; line-height: 1.5; }
+  h3 { margin: 0 0 6px; font-size: .95rem; }
+  h3 small { font-weight: 400; color: var(--sub); margin-left: .4em; }
+  .chart + .chart, .chart + table { margin-top: 14px; }
+  .row { display: grid; grid-template-columns: 8.5em minmax(0, 1fr) 3em; align-items: center; gap: 8px; margin: 5px 0; }
+  .name { font-size: .8rem; line-height: 1.25; }
+  .name small { display: block; color: var(--sub); font-size: .7rem; }
+  .ours .name { font-weight: 700; color: var(--main); }
+  .track { height: 14px; border-radius: 7px; background: #f1f4f7; overflow: hidden; }
+  .bar { height: 100%; border-radius: 7px; background: var(--other); }
+  .ours .bar { background: var(--main); }
+  .val { text-align: right; font-variant-numeric: tabular-nums; font-size: .82rem; line-height: 1.2; }
+  .row .rnote { grid-column: 2 / 4; margin-top: -4px; color: var(--sub); font-size: .7rem; }
+  .ours .val { font-weight: 700; color: var(--main); }
+  .na { color: var(--sub); font-size: .75rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  th, td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  thead th { font-size: .75rem; color: var(--sub); font-weight: 400; }
+  tr.ours td { font-weight: 700; color: var(--main); }
+  td small { display: block; color: var(--sub); font-size: .7rem; font-weight: 400; }
+  .yes { color: var(--accent-d); font-weight: 700; }
+  .note { margin: 10px 0 0; padding-left: 1.1em; font-size: .72rem; color: var(--sub); }
+  .note li { margin: 2px 0; }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<ul class="note" id="note"></ul>
+<script>
+  // ===== ここを書き換えます =====
+  // SHOW_NAMES: false にすると、他社は「他社 A」「他社 B」…と伏せて表示します（型番の大きさの目安だけ残します）
+  var SHOW_NAMES = true;
+  var SPEC = {
+    // 数値は m/s・m/s²。公開値が無いものは null（「公開値未確認」と出ます）
+    models: [
+      { name: 'LexxMoMa R1', ours: true, speed: 2.0, accel: 1.5, payload: '手首部 20kg', sync: 'あり' },
+      { name: 'オムロン LD-90型', alias: '他社 A', speed: 1.35, accel: 1.0, accelNote: '台車単体の初期値', payload: 'ワーク 2kg程度', sync: null },
+      { name: 'オムロン LD-250型', alias: '他社 B', speed: 1.20, accel: 0.6, accelNote: '台車単体の初期値', payload: 'ワーク 10kg程度', sync: null },
+      { name: '明電舎 RocoMo-V', sub: 'CRX-20iA/L 搭載', alias: '他社 C', speed: 1.00, speedNote: '前後進。横行 0.50', accel: null, payload: '手首部 20kg', sync: null }
+    ],
+    notes: [
+      '各社の公開仕様をもとに LexxPluss で整理（2026年10月時点）。R1 の加速度は最新の社内仕様値です。',
+      '他社の加速度は台車単体の上限設定の初期値で、アームを載せた状態での保証値ではありません。',
+      '可搬重量は各社で定義や測定条件が異なります。実際の運用速度は、現場の安全条件によって変わります。'
+    ]
+  };
+  // ==============================
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function label(m) {
+    if (m.ours || SHOW_NAMES) return esc(m.name) + (m.sub ? '<small>' + esc(m.sub) + '</small>' : '');
+    return esc(m.alias || '他社');
+  }
+
+  var out = document.getElementById('out');
+  var html = '';
+  [{ key: 'speed', title: '移動の最高速度', unit: 'm/s', fixed: 2 },
+   { key: 'accel', title: '移動の加速度', unit: 'm/s²', fixed: 1 }].forEach(function (c) {
+    var max = Math.max.apply(null, SPEC.models.map(function (m) { return m[c.key] || 0; }));
+    html += '<div class="chart"><h3>' + c.title + '<small>' + c.unit + '</small></h3>';
+    SPEC.models.forEach(function (m) {
+      var v = m[c.key], note = m[c.key + 'Note'];
+      html += '<div class="row' + (m.ours ? ' ours' : '') + '"><span class="name">' + label(m) + '</span>';
+      if (v == null) {
+        html += '<span class="na">公開値未確認</span><span></span></div>';
+        return;
+      }
+      html += '<div class="track"><div class="bar" style="width:' + (v / max * 100).toFixed(1) + '%"></div></div>' +
+        '<span class="val">' + v.toFixed(c.fixed) + '</span>' + (note ? '<span class="rnote">' + esc(note) + '</span>' : '') + '</div>';
+    });
+    html += '</div>';
+  });
+  html += '<table><thead><tr><th>機種</th><th>可搬重量</th><th>走行とアームの同時動作</th></tr></thead><tbody>' +
+    SPEC.models.map(function (m) {
+      return '<tr' + (m.ours ? ' class="ours"' : '') + '><td>' + label(m) + '</td><td>' + esc(m.payload) + '</td><td>' +
+        (m.sync ? '<span class="yes">' + esc(m.sync) + '</span>' : '<span class="na">公開仕様で未確認</span>') + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  out.innerHTML = html;
+  document.getElementById('note').innerHTML = SPEC.notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('');
+</script>
+</body>
+</html>

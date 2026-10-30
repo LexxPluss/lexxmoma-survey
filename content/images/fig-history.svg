@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" font-family="Hiragino Sans, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', Meiryo, sans-serif">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5F6B76"/></marker><marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0068B7"/></marker></defs>
+<rect width="640" height="300" fill="#fff"/>
+<rect x="20" y="40" width="150" height="58" rx="10" fill="#F6F8FA" stroke="#CBD5DE" stroke-width="1.5"/>
+<text x="95" y="62.0" font-size="15" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">トヨタ車体</text>
+<text x="95" y="82.0" font-size="11" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">使う現場の目線</text>
+<line x1="172" y1="69" x2="228" y2="124" stroke="#5F6B76" stroke-width="1.6" marker-end="url(#ar)"/>
+<rect x="20" y="120" width="150" height="58" rx="10" fill="#F6F8FA" stroke="#CBD5DE" stroke-width="1.5"/>
+<text x="95" y="142.0" font-size="15" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">LexxPluss</text>
+<text x="95" y="162.0" font-size="11" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">移動・制御の技術</text>
+<line x1="172" y1="149" x2="228" y2="150" stroke="#5F6B76" stroke-width="1.6" marker-end="url(#ar)"/>
+<rect x="20" y="200" width="150" height="58" rx="10" fill="#F6F8FA" stroke="#CBD5DE" stroke-width="1.5"/>
+<text x="95" y="222.0" font-size="15" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">パートナー企業</text>
+<text x="95" y="242.0" font-size="11" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">アーム・ハンドなど</text>
+<line x1="172" y1="229" x2="228" y2="176" stroke="#5F6B76" stroke-width="1.6" marker-end="url(#ar)"/>
+<rect x="232" y="96" width="168" height="108" rx="10" fill="#E8F1F9" stroke="#0068B7" stroke-width="2"/>
+<text x="316" y="128.0" font-size="16" fill="#0068B7" text-anchor="middle" dominant-baseline="middle" font-weight="700">共同開発</text>
+<text x="316" y="156.0" font-size="22" fill="#0068B7" text-anchor="middle" dominant-baseline="middle" font-weight="700">約2年</text>
+<text x="316" y="182.0" font-size="11" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">モバイルマニピュレータ</text>
+<line x1="402" y1="132" x2="448" y2="88" stroke="#0068B7" stroke-width="1.6" marker-end="url(#arb)"/>
+<line x1="402" y1="168" x2="448" y2="212" stroke="#0068B7" stroke-width="1.6" marker-end="url(#arb)"/>
+<rect x="452" y="46" width="172" height="84" rx="10" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="538" y="66.0" font-size="11" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">トヨタ車体での呼び名</text>
+<text x="538" y="96.0" font-size="19" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">「さとうくん」</text>
+<rect x="452" y="170" width="172" height="84" rx="10" fill="#E9F6EE" stroke="#3EB370" stroke-width="2"/>
+<text x="538" y="190.0" font-size="11" fill="#23864D" text-anchor="middle" dominant-baseline="middle" font-weight="500">LexxPluss の量産モデル</text>
+<text x="538" y="220.0" font-size="19" fill="#23864D" text-anchor="middle" dominant-baseline="middle" font-weight="700">LexxMoMa R1</text>
+<text x="538" y="242.0" font-size="11" fill="#23864D" text-anchor="middle" dominant-baseline="middle" font-weight="500">派生させて量産化</text>
+<text x="320" y="282.0" font-size="12" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">同じ開発から生まれた機体を、2つの名前で呼んでいます</text>
+</svg>
