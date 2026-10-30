@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 632 256" font-family="Hiragino Sans, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', Meiryo, sans-serif">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5F6B76"/></marker><marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0068B7"/></marker></defs>
+<rect width="632" height="256" fill="#fff"/>
+<polygon points="4,20 96,20 108,42 96,64 4,64 " fill="#0068B7"/>
+<text x="54.0" y="42.0" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">検討・体制</text>
+<rect x="8" y="76" width="94" height="150" rx="6" fill="#F6F8FA" stroke="#CBD5DE" stroke-width="1.5"/>
+<text x="55.0" y="96.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">部門間の調整</text>
+<text x="55.0" y="118.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">推進責任者・予算</text>
+<text x="55.0" y="140.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">内製・ベンダーの</text>
+<text x="55.0" y="162.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">役割分担</text>
+<polygon points="108,20 200,20 212,42 200,64 108,64 120,42" fill="#2F82C8"/>
+<text x="158.0" y="42.0" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">技術検証</text>
+<rect x="112" y="76" width="94" height="150" rx="6" fill="#F6F8FA" stroke="#CBD5DE" stroke-width="1.5"/>
+<text x="159.0" y="96.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">成立性</text>
+<text x="159.0" y="118.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">タクト・品質</text>
+<polygon points="212,20 304,20 316,42 304,64 212,64 224,42" fill="#0068B7"/>
+<text x="262.0" y="42.0" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">安全評価</text>
+<rect x="216" y="76" width="94" height="150" rx="6" fill="#F6F8FA" stroke="#CBD5DE" stroke-width="1.5"/>
+<text x="263.0" y="96.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">安全評価</text>
+<text x="263.0" y="118.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">社内承認</text>
+<polygon points="316,20 408,20 420,42 408,64 316,64 328,42" fill="#2F82C8"/>
+<text x="366.0" y="42.0" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">投資判断</text>
+<rect x="320" y="76" width="94" height="150" rx="6" fill="#F6F8FA" stroke="#CBD5DE" stroke-width="1.5"/>
+<text x="367.0" y="96.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">投資対効果</text>
+<text x="367.0" y="118.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">導入費用</text>
+<polygon points="420,20 512,20 524,42 512,64 420,64 432,42" fill="#0068B7"/>
+<text x="470.0" y="42.0" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">試験導入</text>
+<rect x="424" y="76" width="94" height="150" rx="6" fill="#F6F8FA" stroke="#CBD5DE" stroke-width="1.5"/>
+<text x="471.0" y="96.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">生産を止めない</text>
+<text x="471.0" y="118.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">試験方法</text>
+<text x="471.0" y="140.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">設備改造の負担</text>
+<text x="471.0" y="162.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">社内標準への適合</text>
+<polygon points="524,20 616,20 628,42 616,64 524,64 536,42" fill="#2F82C8"/>
+<text x="574.0" y="42.0" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">運用・保全</text>
+<rect x="528" y="76" width="94" height="150" rx="6" fill="#F6F8FA" stroke="#CBD5DE" stroke-width="1.5"/>
+<text x="575.0" y="96.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">保全体制</text>
+<text x="575.0" y="118.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">トラブル時の</text>
+<text x="575.0" y="140.0" font-size="11.5" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">責任分担</text>
+<text x="320" y="244.0" font-size="12" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">導入の各段階で出てくる主な検討事項（Q3-5 の選択肢）</text>
+</svg>

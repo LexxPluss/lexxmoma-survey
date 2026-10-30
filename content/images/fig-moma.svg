@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" font-family="Hiragino Sans, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', Meiryo, sans-serif">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5F6B76"/></marker><marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0068B7"/></marker></defs>
+<rect width="640" height="300" fill="#fff"/>
+<rect x="0" y="279" width="640" height="2" fill="#CBD5DE"/>
+<rect x="228.0" y="208.7" width="184.0" height="55.199999999999996" rx="9.2" fill="#0068B7"/>
+<rect x="228.0" y="208.7" width="184.0" height="9.2" rx="4.6" fill="#3B8AD0"/>
+<circle cx="260.2" cy="266.2" r="13.799999999999999" fill="#25323C"/>
+<circle cx="379.8" cy="266.2" r="13.799999999999999" fill="#25323C"/>
+<text x="320" y="238.6" font-size="14.95" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">LexxMoMa</text>
+<rect x="338.4" y="174.2" width="32.199999999999996" height="34.5" rx="5.75" fill="#E4EAEF" stroke="#9FB1C0"/>
+<polyline points="354.5,174.2 285.5,107.5 377.5,75.30000000000001" fill="none" stroke="#E4EAEF" stroke-width="20.7" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="354.5,174.2 285.5,107.5 377.5,75.30000000000001" fill="none" stroke="#9FB1C0" stroke-width="1.6099999999999999" stroke-dasharray="0" opacity=".6"/>
+<circle cx="354.5" cy="174.2" r="11.5" fill="#A9BCCB"/>
+<circle cx="285.5" cy="107.5" r="11.5" fill="#A9BCCB"/>
+<circle cx="377.5" cy="75.30000000000001" r="11.5" fill="#A9BCCB"/>
+<rect x="389.0" y="64.95000000000002" width="25.299999999999997" height="20.7" rx="3.4499999999999997" fill="#56636E"/>
+<rect x="414.3" y="56.90000000000001" width="18.4" height="6.8999999999999995" fill="#0068B7"/>
+<rect x="414.3" y="86.80000000000001" width="18.4" height="6.8999999999999995" fill="#0068B7"/>
+<rect x="391.3" y="50.000000000000014" width="13.799999999999999" height="11.5" rx="2.3" fill="#111"/>
+<rect x="20" y="204" width="160" height="52" rx="8" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="32" y="221.0" font-size="14" fill="#0068B7" text-anchor="start" dominant-baseline="middle" font-weight="700">移動する</text>
+<text x="32" y="241.0" font-size="11.5" fill="#5F6B76" text-anchor="start" dominant-baseline="middle" font-weight="500">工程間・設備の前まで</text>
+<line x1="180" y1="230" x2="260.2" y2="266.2" stroke="#0068B7" stroke-width="1.2" stroke-dasharray="4 4"/>
+<circle cx="260.2" cy="266.2" r="4" fill="#0068B7"/>
+<rect x="470" y="94" width="160" height="52" rx="8" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="482" y="111.0" font-size="14" fill="#0068B7" text-anchor="start" dominant-baseline="middle" font-weight="700">つかむ・置く</text>
+<text x="482" y="131.0" font-size="11.5" fill="#5F6B76" text-anchor="start" dominant-baseline="middle" font-weight="500">ハンドを作業で交換</text>
+<line x1="470" y1="120" x2="423.5" y2="75.30000000000001" stroke="#0068B7" stroke-width="1.2" stroke-dasharray="4 4"/>
+<circle cx="423.5" cy="75.30000000000001" r="4" fill="#0068B7"/>
+<rect x="470" y="24" width="160" height="52" rx="8" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="482" y="41.0" font-size="14" fill="#0068B7" text-anchor="start" dominant-baseline="middle" font-weight="700">見る</text>
+<text x="482" y="61.0" font-size="11.5" fill="#5F6B76" text-anchor="start" dominant-baseline="middle" font-weight="500">カメラで位置を補正</text>
+<line x1="470" y1="50" x2="398.2" y2="52.30000000000001" stroke="#0068B7" stroke-width="1.2" stroke-dasharray="4 4"/>
+<circle cx="398.2" cy="52.30000000000001" r="4" fill="#0068B7"/>
+<rect x="20" y="44" width="160" height="52" rx="8" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="32" y="61.0" font-size="14" fill="#0068B7" text-anchor="start" dominant-baseline="middle" font-weight="700">つなぐ</text>
+<text x="32" y="81.0" font-size="11.5" fill="#5F6B76" text-anchor="start" dominant-baseline="middle" font-weight="500">設備・上位システムと連携</text>
+<line x1="180" y1="70" x2="239.5" y2="211.0" stroke="#0068B7" stroke-width="1.2" stroke-dasharray="4 4"/>
+<circle cx="239.5" cy="211.0" r="4" fill="#0068B7"/>
+</svg>

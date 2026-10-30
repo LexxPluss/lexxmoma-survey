@@ -164,8 +164,11 @@ body.solo .newwin { display: none; }
   scrollbar-width: thin;
 }
 .col-info .cards { grid-template-columns: 1fr; gap: 16px; }
-.col-info .card { flex-direction: row; }
-.col-info .card-img { flex: 0 0 38%; aspect-ratio: auto; min-height: 140px; }
+.col-info .card { flex-direction: column; }
+/* 右側は図を見せるので、画像は横いっぱい・縦横比はそのまま */
+.col-info .card-img { aspect-ratio: auto; background: #fff; border-bottom: 1px solid var(--line); }
+.col-info .card-img img { height: auto; object-fit: contain; }
+a.card-img { display: block; cursor: zoom-in; }
 .col-info .card-body { padding: 14px 16px 16px; }
 .col-info .card h3 { font-size: 1rem; margin-bottom: 4px; }
 .col-info .chips { margin: 0 0 14px; }
@@ -201,6 +204,13 @@ body.solo .newwin { display: none; }
 @keyframes flash { from { box-shadow: 0 0 0 3px rgba(62,179,112,.45); } to { box-shadow: 0 0 0 0 rgba(62,179,112,0); } }
 @media (prefers-reduced-motion: reduce) { .card.flash { animation: none; } }
 .results-area { margin-top: 48px; }
+
+/* 別の HTML ページを埋め込んだカード */
+.col-info .card.card-embed { flex-direction: column; }
+.card-embed-box { margin-top: 8px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+.card-embed-box iframe { display: block; width: 100%; border: 0; }
+.embed-open { display: inline-block; margin-top: 6px; font-size: .82rem; text-decoration: none; }
+.embed-open:hover { text-decoration: underline; }
 
 .form-holder iframe {
   width: 100%;
@@ -250,6 +260,7 @@ body.solo .newwin { display: none; }
 .tag-vision { background: var(--main-pale); color: var(--main); }
 .tag-case { background: var(--accent-pale); color: #23864d; }
 .tag-other { background: var(--bg-soft); color: var(--sub); }
+.tag-hint { background: #fff4dc; color: #8a5a00; }
 .card-when { color: var(--sub); }
 .card h3 { font-size: 1.08rem; margin-bottom: 8px; }
 .card-text { font-size: .92rem; color: #36424d; }
@@ -331,8 +342,7 @@ details.others ul { margin: 6px 0 0; padding-left: 1.2em; }
 @media (max-width: 640px) {
   .intro { padding: 16px 18px; border-left-width: 4px; }
   .intro h1 { font-size: 1.15rem; }
-  .col-info .card { flex-direction: column; }
-  .col-info .card-img { flex: none; aspect-ratio: 16 / 9; min-height: 0; }
+
   main.wrap { padding-top: 22px; }
   .tabs { gap: 0; }
   .tab { flex: 1 0 auto; font-size: .84rem; padding: .6em .35em .7em; }
@@ -348,4 +358,61 @@ details.others ul { margin: 6px 0 0; padding-left: 1.2em; }
 @media (min-width: 1200px) {
   .wrap { padding: 0 32px; }
   .layout { gap: 36px; }
+}
+
+/* ---------- 自前の回答画面 ---------- */
+.sv { border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px 18px; background: #fff; }
+.sv-progress { display: flex; align-items: center; gap: 12px; font-size: .8rem; color: var(--sub); margin-bottom: 14px; }
+.sv-bar { flex: 1; height: 6px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; }
+.sv-bar i { display: block; height: 100%; background: var(--main); border-radius: 999px; transition: width .3s; }
+.sv-page-title { font-size: 1.15rem; color: var(--main); margin-bottom: 4px; }
+.sv-page-desc { margin: 0 0 8px; color: var(--sub); font-size: .9rem; white-space: pre-line; }
+.sv-about { margin: 8px 0 4px; font-size: .88rem; color: #36424d; background: var(--bg-soft); border-radius: 8px; padding: 8px 14px; }
+.sv-about summary { cursor: pointer; font-weight: 700; color: var(--main); }
+.sv-about p { margin: 6px 0 4px; white-space: pre-line; }
+.sv-header { margin: 22px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
+.sv-header h4 { margin: 0; font-size: 1rem; }
+.sv-header p { margin: 4px 0 0; color: var(--sub); font-size: .88rem; white-space: pre-line; }
+.sv-q { margin: 14px -10px 0; padding: 14px 10px 12px; border-radius: 10px; border-left: 3px solid transparent; transition: background .2s, border-color .2s; outline: none; }
+.sv-q.is-active { background: #f7fafd; border-left-color: var(--main); }
+.sv-q.has-err { background: #fff6f5; border-left-color: #c0392b; }
+.sv-title { font-size: .98rem; line-height: 1.55; margin: 0 0 4px; }
+.sv-req, .sv-opt-tag { display: inline-block; font-size: .68rem; font-weight: 700; border-radius: 4px; padding: 0 .5em; margin-left: .5em; vertical-align: .15em; }
+.sv-req { background: #fdecea; color: #c0392b; }
+.sv-opt-tag { background: var(--bg-soft); color: var(--sub); }
+.sv-help { margin: 0 0 10px; font-size: .82rem; color: var(--sub); white-space: pre-line; line-height: 1.6; }
+.sv-input { width: 100%; font: inherit; font-size: .95rem; padding: .6em .8em; border: 1px solid #cfd8df; border-radius: 8px; background: #fff; }
+.sv-input:focus { border-color: var(--main); outline: 3px solid rgba(0,104,183,.15); }
+textarea.sv-input { resize: vertical; min-height: 6em; line-height: 1.6; }
+.sv-short { width: auto; }
+.sv-opts { display: grid; gap: 6px; }
+.sv-opt { display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: .92rem; line-height: 1.5; transition: border-color .15s, background .15s; }
+.sv-opt:hover { border-color: #9cc3e3; }
+.sv-opt input { margin: .3em 0 0; flex: none; width: 16px; height: 16px; accent-color: var(--main); }
+.sv-opt:has(input:checked) { border-color: var(--main); background: var(--main-pale); }
+.sv-opt.is-off { opacity: .45; cursor: not-allowed; }
+.sv-opt.sv-ex-first { margin-top: 8px; position: relative; }
+.sv-opt.sv-ex-first::before { content: "単独で選ぶ選択肢"; position: absolute; left: 0; top: -1.55em; font-size: .7rem; color: var(--sub); }
+.sv-ex { border-style: dashed; }
+.sv-count { margin: 6px 0 0; font-size: .78rem; color: var(--sub); }
+.sv-scale { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sv-scale-opt { flex: 0 0 auto; padding: 8px 14px; }
+.sv-scale-label { font-size: .8rem; color: var(--sub); }
+.sv-err { margin: 6px 0 0; color: #c0392b; font-size: .82rem; font-weight: 700; }
+.sv-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+.sv-nav .btn { min-width: 8em; padding: .65em 1.6em; font-size: .95rem; }
+.sv-foot { margin: 12px 0 0; font-size: .78rem; color: var(--sub); }
+.sv-fail { color: #c0392b; }
+.sv-done { text-align: center; padding: 36px 24px; }
+.sv-done-mark { width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 50%; background: var(--accent-pale); color: #23864d; font-size: 1.8rem; line-height: 56px; font-weight: 700; }
+.sv-done p { color: #36424d; }
+.sv-preview { width: 100%; margin: 16px 0 0; border-collapse: collapse; text-align: left; font-size: .82rem; }
+.sv-preview th, .sv-preview td { border-top: 1px solid var(--line); padding: 6px 8px; vertical-align: top; }
+.sv-preview th { width: 45%; color: var(--sub); font-weight: 500; }
+/* 右側：今見ている質問に関係するカード */
+.col-info .card.is-current { border-color: var(--main); box-shadow: 0 0 0 2px rgba(0,104,183,.18); }
+@media (max-width: 640px) {
+  .sv { padding: 18px 14px 14px; }
+  .sv-q { margin: 12px -6px 0; padding: 12px 6px 10px; }
+  .sv-nav .btn { min-width: 6.5em; }
 }

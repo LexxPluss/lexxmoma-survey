@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 136" font-family="Hiragino Sans, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', Meiryo, sans-serif">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5F6B76"/></marker><marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0068B7"/></marker></defs>
+<rect width="640" height="136" fill="#fff"/>
+<rect x="6" y="24" width="108" height="66" rx="10" fill="#E8F1F9" stroke="#0068B7" stroke-width="1.5"/>
+<text x="60" y="57.0" font-size="14" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">ご相談</text>
+<line x1="116" y1="57" x2="132" y2="57" stroke="#5F6B76" stroke-width="1.6" marker-end="url(#ar)"/>
+<rect x="134" y="24" width="108" height="66" rx="10" fill="#E8F1F9" stroke="#0068B7" stroke-width="1.5"/>
+<text x="188" y="47.5" font-size="14" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">現場・工程の</text>
+<text x="188" y="66.5" font-size="14" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">確認</text>
+<line x1="244" y1="57" x2="260" y2="57" stroke="#5F6B76" stroke-width="1.6" marker-end="url(#ar)"/>
+<rect x="262" y="24" width="108" height="66" rx="10" fill="#E8F1F9" stroke="#0068B7" stroke-width="1.5"/>
+<text x="316" y="47.5" font-size="14" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">評価の</text>
+<text x="316" y="66.5" font-size="14" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">計画</text>
+<line x1="372" y1="57" x2="388" y2="57" stroke="#5F6B76" stroke-width="1.6" marker-end="url(#ar)"/>
+<rect x="390" y="24" width="108" height="66" rx="10" fill="#E9F6EE" stroke="#3EB370" stroke-width="1.5"/>
+<text x="444" y="57.0" font-size="14" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">実機評価</text>
+<line x1="500" y1="57" x2="516" y2="57" stroke="#5F6B76" stroke-width="1.6" marker-end="url(#ar)"/>
+<rect x="518" y="24" width="108" height="66" rx="10" fill="#E8F1F9" stroke="#0068B7" stroke-width="1.5"/>
+<text x="572" y="47.5" font-size="14" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">導入の</text>
+<text x="572" y="66.5" font-size="14" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">判断</text>
+<text x="320" y="120.0" font-size="12" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">時期と進め方は、工程ごとにご相談して決めます（流れは一例です）</text>
+</svg>

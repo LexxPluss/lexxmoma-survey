@@ -59,7 +59,8 @@
     $('gate').hidden = true;
     $('app').hidden = false;
     $('demo-badge').hidden = !DEMO;
-    embedForm();
+    if (CFG.FORM_MODE === 'custom' && window.SURVEY_FORM) startSurvey();
+    else embedForm();
     Content.load(CFG.CONTENT_FILE || 'content/items.md');
     if (RESULTS) startResults(pw, data);
   }
@@ -129,6 +130,18 @@
       Results.setActive(true);
     };
     document.head.appendChild(s);
+  }
+
+  /* ---------- 自前の回答画面（質問は js/questions.js、回答は Google フォームへ） ---------- */
+  function startSurvey() {
+    var f = window.SURVEY_FORM;
+    Content.configure({ sections: f.pages.length, titles: f.pages.map(function (p) { return p.title; }), manual: false });
+    Survey.start({
+      form: f,
+      holder: $('form-holder'),
+      onPage: function (i) { Content.setSection(i === 'done' ? 'done' : i + 1); },
+      onQuestion: function (no) { Content.focusQuestion(no); }
+    });
   }
 
   /* ---------- フォームの埋め込み ---------- */

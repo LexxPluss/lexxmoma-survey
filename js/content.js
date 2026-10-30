@@ -5,16 +5,26 @@ var Content = (function () {
   'use strict';
 
   var CFG = window.SURVEY_CONFIG || {};
-  var KEYS = { '区分': 'kind', '時期': 'when', '画像': 'image', 'セクション': 'section' };
+  var KEYS = { '区分': 'kind', '時期': 'when', '画像': 'image', 'セクション': 'section', '質問': 'question', '埋め込み': 'embed', '高さ': 'embedH' };
   var DONE = 'done'; // 送信後
 
   var state = {
     cards: [],
     kind: 'すべて',
     sections: Math.max(0, Number(CFG.FORM_SECTIONS) || 0),
+    titles: CFG.SECTION_TITLES || [],
+    manual: true,      // ‹ › で手で合わせるか（自前の回答画面では不要）
+    question: '',      // 回答画面で今見ている質問（例：Q5）
     current: 1,
     loads: 0
   };
+
+  // 自前の回答画面のときは、ページ数と名前を質問データから受け取る
+  function configure(o) {
+    if (o.sections != null) state.sections = o.sections;
+    if (o.titles) state.titles = o.titles;
+    if (o.manual != null) state.manual = o.manual;
+  }
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -27,6 +37,22 @@ var Content = (function () {
     return esc(s)
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  }
+
+  // content/ からの相対パスを、画面から見たパスに直す
+  function resolve(path, baseDir) {
+    if (!path || /^(https?:)?\/\//.test(path) || path.charAt(0) === '/') return path;
+    return baseDir + path;
+  }
+
+  // 別の HTML ページをカードの中に表示する（「大きく開く」で別の画面にも出せる）
+  function embedHtml(c) {
+    var h = parseInt(String(c.embedH).replace(/[０-９]/g, function (d) {
+      return String.fromCharCode(d.charCodeAt(0) - 0xFEE0);
+    }), 10) || 560;
+    return '<div class="card-embed-box"><iframe src="' + esc(c.embed) + '" title="' + esc(c.title) + '" loading="lazy"' +
+      ' style="height:' + h + 'px"></iframe></div>' +
+      '<a class="embed-open" href="' + esc(c.embed) + '" target="_blank" rel="noopener">大きく開く ↗</a>';
   }
 
   // 「1」「1, 2」「送信後」などを読む
@@ -56,7 +82,7 @@ var Content = (function () {
     intro.html = bodyHtml(head);
     parts.slice(1).forEach(function (chunk) {
       var lines = chunk.split('\n');
-      var card = { title: lines.shift().trim(), kind: '', when: '', image: '', section: '', body: [] };
+      var card = { title: lines.shift().trim(), kind: '', when: '', image: '', section: '', question: '', embed: '', embedH: '', body: [] };
       var inHead = true;
       lines.forEach(function (line) {
         var m = line.match(/^([^:：]{1,5})[:：]\s*(.*)$/);
@@ -66,10 +92,12 @@ var Content = (function () {
         if (line.trim()) inHead = false;
         card.body.push(line);
       });
-      if (card.image && !/^(https?:)?\/\//.test(card.image) && card.image.charAt(0) !== '/') {
-        card.image = baseDir + card.image;
-      }
+      card.image = resolve(card.image, baseDir);
+      card.embed = resolve(card.embed, baseDir);
       card.sections = parseSections(card.section);
+      card.questions = (card.question.replace(/[ＱＱ]/g, 'Q').replace(/[０-９]/g, function (d) {
+        return String.fromCharCode(d.charCodeAt(0) - 0xFEE0);
+      }).replace(/[－‐ー]/g, '-').match(/Q\d+(?:-\d+)?/gi) || []).map(function (x) { return x.toUpperCase(); });
       card.html = bodyHtml(card.body);
       cards.push(card);
     });
@@ -94,7 +122,8 @@ var Content = (function () {
   }
 
   function tagClass(kind) {
-    if (kind.indexOf('構想') >= 0) return 'tag-vision';
+    if (kind.indexOf('構想') >= 0 || kind.indexOf('展開') >= 0) return 'tag-vision';
+    if (kind.indexOf('ヒント') >= 0) return 'tag-hint';
     if (kind.indexOf('事例') >= 0) return 'tag-case';
     return 'tag-other';
   }
@@ -115,8 +144,7 @@ var Content = (function () {
 
   function sectionLabel(s) {
     if (s === DONE) return '回答ありがとうございました';
-    var titles = CFG.SECTION_TITLES || [];
-    return titles[s - 1] ? titles[s - 1] : 'セクション ' + s;
+    return state.titles[s - 1] ? state.titles[s - 1] : 'セクション ' + s;
   }
 
   function renderBar() {
@@ -124,10 +152,10 @@ var Content = (function () {
     if (!linked()) { bar.hidden = true; return; }
     var s = state.current;
     var pos = s === DONE ? '送信後' : s + ' / ' + state.sections;
-    bar.innerHTML =
-      '<button type="button" class="step-btn" data-step="-1" aria-label="前のセクションの内容"' + (s === 1 ? ' disabled' : '') + '>‹</button>' +
-      '<div class="step-now"><span class="step-pos">' + esc(pos) + '</span>' +
-      '<span class="step-title">' + esc(sectionLabel(s)) + '</span></div>' +
+    var now = '<div class="step-now"><span class="step-pos">' + esc(pos) + '</span>' +
+      '<span class="step-title">' + esc(sectionLabel(s)) + '</span></div>';
+    bar.innerHTML = !state.manual ? now :
+      '<button type="button" class="step-btn" data-step="-1" aria-label="前のセクションの内容"' + (s === 1 ? ' disabled' : '') + '>‹</button>' + now +
       '<button type="button" class="step-btn" data-step="1" aria-label="次のセクションの内容"' + (s === DONE ? ' disabled' : '') + '>›</button>';
     bar.hidden = false;
   }
@@ -148,6 +176,30 @@ var Content = (function () {
     });
     var empty = document.getElementById('vision-empty');
     if (empty) empty.hidden = shown > 0;
+    markQuestion(false);
+  }
+
+  /* ---------- 質問との連動（自前の回答画面） ---------- */
+  // 今見ている質問に関係するカードに印を付け、右側の欄の中でそのカードまで動かす
+  function markQuestion(scroll) {
+    var info = document.getElementById('info');
+    var target = null;
+    document.querySelectorAll('#vision-cards .card').forEach(function (el) {
+      var c = state.cards[Number(el.getAttribute('data-i'))];
+      var on = !!state.question && !el.hidden && c.questions.indexOf(state.question) >= 0;
+      el.classList.toggle('is-current', on);
+      if (on && !target) target = el;
+    });
+    // 右側が画面に貼り付いている（PC）ときだけ動かす。スマホでは画面全体が動いてしまうため動かさない
+    if (!scroll || !target || getComputedStyle(info).position !== 'sticky') return;
+    var top = info.scrollTop + target.getBoundingClientRect().top - info.getBoundingClientRect().top - 64;
+    info.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  }
+
+  function focusQuestion(no) {
+    if (no === state.question) return;
+    state.question = no || '';
+    markQuestion(true);
   }
 
   function setSection(s, fromForm) {
@@ -193,12 +245,14 @@ var Content = (function () {
       return;
     }
     box.innerHTML = cards.map(function (c, i) {
-      return '<article class="card" data-i="' + i + '">' +
-        (c.image ? '<div class="card-img"><img src="' + esc(c.image) + '" alt="" loading="' + (i < 3 ? 'eager' : 'lazy') + '"></div>' : '') +
+      return '<article class="card' + (c.embed ? ' card-embed' : '') + '" data-i="' + i + '">' +
+        (c.image && !c.embed ? '<a class="card-img" href="' + esc(c.image) + '" target="_blank" rel="noopener" title="大きく表示">' +
+          '<img src="' + esc(c.image) + '" alt="' + esc(c.title) + '" loading="' + (i < 3 ? 'eager' : 'lazy') + '"></a>' : '') +
         '<div class="card-body"><div class="card-meta">' +
         (c.kind ? '<span class="tag ' + tagClass(c.kind) + '">' + esc(c.kind) + '</span>' : '') +
         (c.when ? '<span class="card-when">' + esc(c.when) + '</span>' : '') +
-        '</div><h3>' + esc(c.title) + '</h3><div class="card-text">' + c.html + '</div></div></article>';
+        '</div><h3>' + esc(c.title) + '</h3><div class="card-text">' + c.html + '</div>' +
+        (c.embed ? embedHtml(c) : '') + '</div></article>';
     }).join('') + '<p id="vision-empty" class="notice" hidden>このセクションに関連する内容はありません。</p>';
 
     var kinds = [];
@@ -243,5 +297,5 @@ var Content = (function () {
       });
   }
 
-  return { load: load, parse: parse, formLoaded: formLoaded, setSection: setSection };
+  return { load: load, parse: parse, formLoaded: formLoaded, setSection: setSection, configure: configure, focusQuestion: focusQuestion };
 })();

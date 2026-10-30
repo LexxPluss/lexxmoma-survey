@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>人時の目安</title>
+<style>
+  :root { --main: #0068B7; --accent: #3EB370; --text: #1f2933; --sub: #5f6b76; --line: #e2e7ec; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 14px 16px; background: #fff; color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif; font-size: 14px; line-height: 1.6; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  label { display: flex; align-items: center; gap: 6px; }
+  input { font: inherit; width: 5.5em; padding: .35em .5em; border: 1px solid var(--line); border-radius: 6px; text-align: right; }
+  .op { color: var(--sub); }
+  .result { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: #e9f6ee; }
+  .result b { font-size: 1.4rem; color: #23864d; margin: 0 .15em; }
+  .choice { margin-top: 4px; font-size: .9rem; }
+  .choice span { font-weight: 700; color: var(--main); }
+  .note { margin: 8px 0 0; font-size: .78rem; color: var(--sub); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <label>人数 <input id="n" type="number" min="0" step="1" value="2"> 名</label>
+    <span class="op">×</span>
+    <label>1人あたり <input id="h" type="number" min="0" step="0.5" value="4"> 時間／日</label>
+  </div>
+  <div class="result">
+    1稼働日の合計：<b id="total">8</b>人時
+    <div class="choice">Q4-4 では「<span id="choice"></span>」が目安です</div>
+  </div>
+  <p class="note">計算はこの画面の中だけで行います。入力した数字は送信・保存されません。</p>
+<script>
+  // Q4-4 の選択肢の区切り（人時／日）
+  var BANDS = [
+    [1, '1人時未満／日'],
+    [4, '1人時以上〜4人時未満／日'],
+    [8, '4人時以上〜8人時未満／日'],
+    [16, '8人時以上〜16人時未満／日'],
+    [Infinity, '16人時以上／日']
+  ];
+  function update() {
+    var n = Math.max(0, Number(document.getElementById('n').value) || 0);
+    var h = Math.max(0, Number(document.getElementById('h').value) || 0);
+    var t = Math.round(n * h * 10) / 10;
+    document.getElementById('total').textContent = t;
+    var label = BANDS.filter(function (b) { return t < b[0]; })[0][1];
+    document.getElementById('choice').textContent = label;
+  }
+  document.getElementById('n').addEventListener('input', update);
+  document.getElementById('h').addEventListener('input', update);
+  update();
+</script>
+</body>
+</html>
