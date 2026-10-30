@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>電池の補給で止まる時間</title>
+<style>
+  :root { --main: #0068B7; --main-pale: #e8f1f9; --accent: #3EB370; --accent-d: #23864d; --text: #1f2933; --sub: #5f6b76; --line: #e2e7ec; --other: #b7c3cd; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 10px 12px; background: #fff; color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif; font-size: 13px; line-height: 1.5; }
+  .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
+  .kpi { padding: 6px 8px; border-radius: 8px; background: var(--main-pale); text-align: center; line-height: 1.25; }
+  .kpi .l { display: block; font-size: .7rem; color: var(--sub); }
+  .kpi .v { display: block; margin: 2px 0; font-size: 1.35rem; font-weight: 800; color: var(--main); white-space: nowrap; }
+  .kpi .v small { font-size: .6em; font-weight: 700; }
+  .kpi .c { display: block; font-size: .68rem; color: var(--sub); }
+  .kpi.them { background: #f1f4f7; }
+  .kpi.them .v { color: #56636e; }
+  .kpi.win { background: #e9f6ee; }
+  .kpi.win .v { color: var(--accent-d); }
+  h3 { margin: 0 0 4px; font-size: .78rem; color: var(--sub); font-weight: 400; }
+  .row { display: grid; grid-template-columns: 9em minmax(0, 1fr) 4.2em; align-items: center; gap: 8px; margin: 6px 0; }
+  .name { font-size: .8rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ours .name { color: var(--main); }
+  .track { height: 16px; border-radius: 4px; background: #f1f4f7; overflow: hidden; }
+  .bar { height: 100%; width: 0; border-radius: 4px; background: var(--other); transition: width 1.6s ease-out; }
+  .ours .bar { background: var(--main); min-width: 4px; }
+  .val { text-align: right; font-size: .8rem; font-weight: 700; white-space: nowrap; }
+  .ours .val { color: var(--main); }
+  .na { color: var(--sub); font-size: .72rem; font-weight: 400; }
+  .how { display: block; font-size: .66rem; color: var(--sub); font-weight: 400; }
+  details { margin-top: 6px; font-size: .72rem; color: var(--sub); }
+  summary { cursor: pointer; }
+  details ul { margin: 4px 0 0; padding-left: 1.1em; }
+  @media (max-width: 420px) { .kpi { padding: 5px 4px; } .kpi .v { font-size: 1.05rem; } .kpi .l, .kpi .c { font-size: .62rem; } .row { grid-template-columns: 5.6em minmax(0, 1fr) 3.8em; } }
+</style>
+</head>
+<body>
+<div class="kpis">
+  <div class="kpi"><span class="l">LexxMoMa R1</span><span class="v">約5<small>分</small></span><span class="c">電池を交換</span></div>
+  <div class="kpi them"><span class="l">他社</span><span class="v">約4<small>時間</small></span><span class="c">充電を待つ</span></div>
+  <div class="kpi win"><span class="l">止まる時間</span><span class="v">約1/48</span><span class="c">他社比</span></div>
+</div>
+<h3>電池の補給で止まる時間</h3>
+<div id="rows"></div>
+<details>
+  <summary>数値の出典</summary>
+  <ul>
+    <li>他社は公開仕様の満充電時間（台車単体。開始時の残量の記載なし）。RocoMo-V は公開値がありません。</li>
+    <li>LexxMoMa R1 は交換式の電池を入れ替える時間の目安です。</li>
+  </ul>
+</details>
+<script>
+  // ===== ここを書き換えます（min：止まる時間の分。null は公開値なし） =====
+  var MODELS = [
+    { name: 'LexxMoMa R1', short: 'R1', ours: true, min: 5, how: '交換' },
+    { name: 'オムロン LD-90型', short: 'LD-90', min: 240, how: '充電' },
+    { name: 'オムロン LD-250型', short: 'LD-250', min: 240, how: '充電' },
+    { name: '明電舎 RocoMo-V', short: 'RocoMo-V', min: null, how: '充電' }
+  ];
+  // =====================================================================
+  var max = Math.max.apply(null, MODELS.map(function (m) { return m.min || 0; }));
+  var label = function (m) { return m.min >= 60 ? '約' + Math.round(m.min / 60) + '時間' : '約' + m.min + '分'; };
+  document.getElementById('rows').innerHTML = MODELS.map(function (m) {
+    return '<div class="row' + (m.ours ? ' ours' : '') + '"><span class="name"></span>' +
+      (m.min == null ? '<span class="na">公開値なし</span><span></span>'
+        : '<div class="track"><div class="bar" data-w="' + (m.min / max * 100).toFixed(1) + '"></div></div>' +
+          '<span class="val">' + label(m) + '<span class="how">' + m.how + '</span></span>') + '</div>';
+  }).join('');
+  var narrow = window.matchMedia('(max-width: 420px)').matches;
+  document.querySelectorAll('.name').forEach(function (n, i) { n.textContent = narrow ? MODELS[i].short : MODELS[i].name; });
+  // 棒が伸びる動きで「どれだけ長く止まるか」を見せる
+  requestAnimationFrame(function () {
+    setTimeout(function () {
+      document.querySelectorAll('.bar').forEach(function (b) { b.style.width = b.getAttribute('data-w') + '%'; });
+    }, 300);
+  });
+</script>
+</body>
+</html>

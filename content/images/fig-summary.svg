@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" font-family="Hiragino Sans, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', Meiryo, sans-serif">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5F6B76"/></marker><marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0068B7"/></marker></defs>
+<rect width="640" height="300" fill="#fff"/>
+<text x="320" y="32.0" font-size="22" fill="#0068B7" text-anchor="middle" dominant-baseline="middle" font-weight="800">LexxMoMa R1 は、自動車工場にいちばん合う</text>
+<rect x="22" y="58" width="188" height="150" rx="10" fill="#E8F1F9" stroke="#0068B7" stroke-width="1.6"/>
+<circle cx="46" cy="82" r="14" fill="#0068B7"/>
+<text x="46" y="82.0" font-size="14" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">①</text>
+<text x="126" y="82.0" font-size="15" fill="#0068B7" text-anchor="middle" dominant-baseline="middle" font-weight="700">走りながら作業</text>
+<text x="116" y="132.0" font-size="20" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="800">止まらずに</text>
+<text x="116" y="172.0" font-size="20" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">つかむ・置く</text>
+<rect x="226" y="58" width="188" height="150" rx="10" fill="#E8F1F9" stroke="#0068B7" stroke-width="1.6"/>
+<circle cx="250" cy="82" r="14" fill="#0068B7"/>
+<text x="250" y="82.0" font-size="14" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">②</text>
+<text x="330" y="82.0" font-size="15" fill="#0068B7" text-anchor="middle" dominant-baseline="middle" font-weight="700">速い・加速が強い</text>
+<text x="320" y="132.0" font-size="26" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="800">2.0 m/s</text>
+<text x="320" y="172.0" font-size="22" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">1.5 m/s²</text>
+<rect x="430" y="58" width="188" height="150" rx="10" fill="#E8F1F9" stroke="#0068B7" stroke-width="1.6"/>
+<circle cx="454" cy="82" r="14" fill="#0068B7"/>
+<text x="454" y="82.0" font-size="14" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">③</text>
+<text x="534" y="82.0" font-size="15" fill="#0068B7" text-anchor="middle" dominant-baseline="middle" font-weight="700">電池は交換式</text>
+<text x="524" y="132.0" font-size="26" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="800">約5分</text>
+<text x="524" y="172.0" font-size="14" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">充電待ちなし</text>
+<rect x="22" y="226" width="596" height="52" rx="10" fill="#E9F6EE" stroke="#3EB370" stroke-width="1.6"/>
+<text x="320" y="252.0" font-size="18" fill="#23864D" text-anchor="middle" dominant-baseline="middle" font-weight="800">1回の作業が短く、ラインを止めない</text>
+</svg>

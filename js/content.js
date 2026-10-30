@@ -50,12 +50,16 @@ var Content = (function () {
     var h = parseInt(String(c.embedH).replace(/[０-９]/g, function (d) {
       return String.fromCharCode(d.charCodeAt(0) - 0xFEE0);
     }), 10) || 560;
-    // 「埋め込み: a.html, b.html」のように並べると、上から順に出す
-    return c.embed.split(/\s*[,、]\s*/).filter(Boolean).map(function (src) {
+    // 動画・画像と同じく、カードの上に出す。「埋め込み: a.html, b.html」のように並べると、上から順に出す
+    return '<div class="card-embeds">' + c.embed.split(/\s*[,、]\s*/).filter(Boolean).map(function (src) {
       return '<div class="card-embed-box"><iframe src="' + esc(src) + '" title="' + esc(c.title) + '" loading="lazy"' +
-        ' style="height:' + h + 'px"></iframe></div>' +
-        '<a class="embed-open" href="' + esc(src) + '" target="_blank" rel="noopener">大きく開く ↗</a>';
-    }).join('');
+        ' style="height:' + h + 'px"></iframe></div>';
+    }).join('') + '</div>';
+  }
+  function embedLinks(c) {
+    return c.embed.split(/\s*[,、]\s*/).filter(Boolean).map(function (src) {
+      return '<a class="embed-open" href="' + esc(src) + '" target="_blank" rel="noopener">大きく開く ↗</a>';
+    }).join(' ');
   }
 
   // 同じサイト内のページなら、中身の高さに合わせて枠を伸び縮みさせる（「高さ:」は読み込むまでの仮の高さ）
@@ -148,6 +152,7 @@ var Content = (function () {
     if (kind.indexOf('構想') >= 0 || kind.indexOf('展開') >= 0) return 'tag-vision';
     if (kind.indexOf('ヒント') >= 0) return 'tag-hint';
     if (kind.indexOf('事例') >= 0 || kind.indexOf('特徴') >= 0) return 'tag-case';
+    if (kind.indexOf('結論') >= 0) return 'tag-vision';
     return 'tag-other';
   }
 
@@ -270,32 +275,19 @@ var Content = (function () {
     box.innerHTML = cards.map(function (c, i) {
       return '<article class="card' + (c.embed ? ' card-embed' : '') + '" data-i="' + i + '">' +
         (c.video ? videoHtml(c) : '') +
+        (c.embed ? embedHtml(c) : '') +
         (c.image && !c.embed && !c.video ? '<a class="card-img" href="' + esc(c.image) + '" target="_blank" rel="noopener" title="大きく表示">' +
           '<img src="' + esc(c.image) + '" alt="' + esc(c.title) + '" loading="' + (i < 3 ? 'eager' : 'lazy') + '"></a>' : '') +
         '<div class="card-body"><div class="card-meta">' +
         (c.kind ? '<span class="tag ' + tagClass(c.kind) + '">' + esc(c.kind) + '</span>' : '') +
         (c.when ? '<span class="card-when">' + esc(c.when) + '</span>' : '') +
         '</div><h3>' + esc(c.title) + '</h3><div class="card-text">' + c.html + '</div>' +
-        (c.embed ? embedHtml(c) : '') + '</div></article>';
+        (c.embed ? embedLinks(c) : '') + '</div></article>';
     }).join('') + '<p id="vision-empty" class="notice" hidden>このセクションに関連する内容はありません。</p>';
     box.querySelectorAll('.card-embed-box iframe').forEach(fitToContent);
 
-    var kinds = [];
-    cards.forEach(function (c) { if (c.kind && kinds.indexOf(c.kind) < 0) kinds.push(c.kind); });
-    if (kinds.length >= 2) {
-      filter.innerHTML = ['すべて'].concat(kinds).map(function (k, i) {
-        return '<button type="button" class="chip" aria-pressed="' + (i === 0) + '" data-kind="' + esc(k) + '">' + esc(k) + '</button>';
-      }).join('');
-      filter.addEventListener('click', function (ev) {
-        var b = ev.target.closest('.chip');
-        if (!b) return;
-        state.kind = b.getAttribute('data-kind');
-        filter.querySelectorAll('.chip').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
-        applyFilter(false);
-      });
-    } else {
-      filter.hidden = true;
-    }
+    // 区分ごとの絞り込みボタンは使わない（区分はカードの小さな札としてだけ表示）
+    filter.hidden = true;
 
     document.getElementById('section-bar').addEventListener('click', function (ev) {
       var b = ev.target.closest('.step-btn');
