@@ -17,37 +17,37 @@
 <rect x="406.1" y="96.3" width="16.8" height="6.300000000000001" fill="#0068B7"/>
 <rect x="406.1" y="123.6" width="16.8" height="6.300000000000001" fill="#0068B7"/>
 <rect x="385.1" y="90.0" width="12.600000000000001" height="10.5" rx="2.1" fill="#111"/>
-<rect x="8" y="25" width="172" height="30" rx="6" fill="#fff" stroke="#3EB370" stroke-width="1.5"/>
-<text x="94" y="40.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">設備・上位システム連携</text>
-<line x1="180" y1="40" x2="246.5" y2="237.0" stroke="#3EB370" stroke-width="1" stroke-dasharray="4 4"/>
-<circle cx="246.5" cy="237.0" r="3.5" fill="#3EB370"/>
-<rect x="8" y="75" width="172" height="30" rx="6" fill="#fff" stroke="#3EB370" stroke-width="1.5"/>
-<text x="94" y="90.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">設定・操作画面</text>
-<line x1="180" y1="90" x2="246.5" y2="237.0" stroke="#3EB370" stroke-width="1" stroke-dasharray="4 4"/>
-<circle cx="246.5" cy="237.0" r="3.5" fill="#3EB370"/>
-<rect x="8" y="185" width="172" height="30" rx="6" fill="#fff" stroke="#3EB370" stroke-width="1.5"/>
-<text x="94" y="200.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">異常検知・復旧</text>
-<line x1="180" y1="200" x2="278.0" y2="258.0" stroke="#3EB370" stroke-width="1" stroke-dasharray="4 4"/>
-<circle cx="278.0" cy="258.0" r="3.5" fill="#3EB370"/>
+<rect x="8" y="25" width="172" height="30" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="94" y="40.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">設備・上位システムとの連携</text>
+<line x1="180" y1="40" x2="246.5" y2="237.0" stroke="#0068B7" stroke-width="1" stroke-dasharray="4 4"/>
+<circle cx="246.5" cy="237.0" r="3.5" fill="#0068B7"/>
+<rect x="8" y="75" width="172" height="30" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="94" y="90.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">品種追加・段取り替え</text>
+<line x1="180" y1="90" x2="246.5" y2="237.0" stroke="#0068B7" stroke-width="1" stroke-dasharray="4 4"/>
+<circle cx="246.5" cy="237.0" r="3.5" fill="#0068B7"/>
+<rect x="8" y="185" width="172" height="30" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="94" y="200.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">異常時の対応</text>
+<line x1="180" y1="200" x2="278.0" y2="258.0" stroke="#0068B7" stroke-width="1" stroke-dasharray="4 4"/>
+<circle cx="278.0" cy="258.0" r="3.5" fill="#0068B7"/>
 <rect x="8" y="253" width="172" height="30" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
-<text x="94" y="268.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">移動・停止位置の再現性</text>
+<text x="94" y="268.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">部品・容器の受け渡し</text>
 <line x1="180" y1="268" x2="265.4" y2="287.4" stroke="#0068B7" stroke-width="1" stroke-dasharray="4 4"/>
 <circle cx="265.4" cy="287.4" r="3.5" fill="#0068B7"/>
 <rect x="460" y="25" width="172" height="30" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
-<text x="546" y="40.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">画像認識・位置補正</text>
+<text x="546" y="40.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">ばらつきへの対応</text>
 <line x1="460" y1="40" x2="391.4" y2="92.1" stroke="#0068B7" stroke-width="1" stroke-dasharray="4 4"/>
 <circle cx="391.4" cy="92.1" r="3.5" fill="#0068B7"/>
 <rect x="460" y="85" width="172" height="30" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
-<text x="546" y="100.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">エンドエフェクタ・治具</text>
+<text x="546" y="100.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">ハンド・治具</text>
 <line x1="460" y1="100" x2="414.5" y2="113.1" stroke="#0068B7" stroke-width="1" stroke-dasharray="4 4"/>
 <circle cx="414.5" cy="113.1" r="3.5" fill="#0068B7"/>
 <rect x="460" y="135" width="172" height="30" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
-<text x="546" y="150.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">接触作業・力制御</text>
+<text x="546" y="150.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">組付け作業</text>
 <line x1="460" y1="150" x2="372.5" y2="113.1" stroke="#0068B7" stroke-width="1" stroke-dasharray="4 4"/>
 <circle cx="372.5" cy="113.1" r="3.5" fill="#0068B7"/>
-<rect x="460" y="215" width="172" height="30" rx="6" fill="#fff" stroke="#3EB370" stroke-width="1.5"/>
-<text x="546" y="230.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">安全設計・評価支援</text>
-<line x1="460" y1="230" x2="368.0" y2="258.0" stroke="#3EB370" stroke-width="1" stroke-dasharray="4 4"/>
-<circle cx="368.0" cy="258.0" r="3.5" fill="#3EB370"/>
-<text x="320" y="318.0" font-size="11.5" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">青：ロボット本体の機能　緑：使い方・つなぎ方</text>
+<rect x="460" y="215" width="172" height="30" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="546" y="230.0" font-size="12" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">安全</text>
+<line x1="460" y1="230" x2="368.0" y2="258.0" stroke="#0068B7" stroke-width="1" stroke-dasharray="4 4"/>
+<circle cx="368.0" cy="258.0" r="3.5" fill="#0068B7"/>
+<text x="320" y="318.0" font-size="11.5" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">Q3-1 の選択肢が、LexxMoMa のどこに関わるかの目安</text>
 </svg>
