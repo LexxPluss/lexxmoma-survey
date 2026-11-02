@@ -6,7 +6,7 @@
 <text x="112" y="207.9" font-size="15" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">1つの工程で</text>
 <text x="112" y="228.1" font-size="15" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">実機評価</text>
 <rect x="28" y="120" width="168" height="30" rx="15" fill="#E9F6EE" stroke="#3EB370" stroke-width="1.5"/>
-<text x="112" y="135.0" font-size="11.5" fill="#23864D" text-anchor="middle" dominant-baseline="middle" font-weight="600">Q4-3〜Q4-5 の候補工程</text>
+<text x="112" y="135.0" font-size="11.5" fill="#23864D" text-anchor="middle" dominant-baseline="middle" font-weight="600">Q4-3〜Q4-4 の候補工程</text>
 <rect x="220" y="110" width="196" height="140" rx="10" fill="#CFE2F3" stroke="#0068B7" stroke-width="1.5"/>
 <text x="318" y="132.0" font-size="12" fill="#0068B7" text-anchor="middle" dominant-baseline="middle" font-weight="700">STEP 2</text>
 <text x="318" y="157.9" font-size="15" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">同じ工場の</text>
@@ -18,6 +18,6 @@
 <text x="524" y="107.9" font-size="15" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">他の工場へ</text>
 <text x="524" y="128.1" font-size="15" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="700">標準化して展開</text>
 <rect x="440" y="20" width="168" height="30" rx="15" fill="#E9F6EE" stroke="#3EB370" stroke-width="1.5"/>
-<text x="524" y="35.0" font-size="11.5" fill="#23864D" text-anchor="middle" dominant-baseline="middle" font-weight="600">Q3-3 の開発・Q5-1 の支援</text>
+<text x="524" y="35.0" font-size="11.5" fill="#23864D" text-anchor="middle" dominant-baseline="middle" font-weight="600">Q3-3・Q5-1 の技術開発</text>
 <text x="320" y="272.0" font-size="12" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">今後の展開イメージ（構想）。ご回答をもとに、各段階の進め方を具体化します</text>
 </svg>
