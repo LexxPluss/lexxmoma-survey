@@ -80,7 +80,8 @@
 
   <script src="js/config.js?v=43"></script>
   <script src="js/demo-data.js?v=43"></script>
-  <script src="js/questions.js?v=43"></script>
+  <!-- 質問データは Google フォームから自動で作り直されるので、毎回新しいものを読む（1分ごとに名前を変えて、古いものを使わない） -->
+  <script>document.write('<script src="js/questions.js?t=' + Math.floor(Date.now() / 60000) + '"><\/script>');</script>
   <script src="js/survey.js?v=43"></script>
   <script src="js/content.js?v=43"></script>
   <script src="js/results.js?v=43"></script>
