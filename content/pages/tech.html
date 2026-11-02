@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>技術開発の項目と LexxMoMa の関わり</title>
+<style>
+  /* Q5-1 の右側：技術開発の11項目を4つに分け、R1 の 3D のどこに関わるかを色で示す */
+  :root { --text: #1f2933; --sub: #5f6b76; --c-link: #0068B7; --c-move: #e07b24; --c-ai: #8a5cc7; --c-hand: #23964f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #fff; color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif; }
+  #stage { position: relative; height: 420px; overflow: hidden; background: linear-gradient(#f4f7fa, #e9eef2); border-radius: 8px; }
+  #stage::before { content: '3D を読み込み中…'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; }
+  #stage canvas { display: block; position: relative; }
+  #lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+  .tag { position: absolute; z-index: 2; width: 172px; padding: 6px 9px 7px; border-radius: 8px; background: rgba(255,255,255,.95); border: 2px solid; box-shadow: 0 3px 12px rgba(0,30,60,.12); font-size: 11.5px; line-height: 1.45; }
+  .tag b { display: flex; align-items: center; gap: 6px; font-size: 14px; margin-bottom: 1px; }
+  .tag b i { width: 10px; height: 10px; border-radius: 50%; }
+  .tag ul { margin: 0; padding-left: 1.1em; color: var(--text); }
+  .tag.link { left: 8px; top: 8px; border-color: var(--c-link); } .tag.link b { color: var(--c-link); } .tag.link b i { background: var(--c-link); }
+  .tag.move { left: 8px; bottom: 8px; border-color: var(--c-move); } .tag.move b { color: var(--c-move); } .tag.move b i { background: var(--c-move); }
+  .tag.ai { right: 8px; top: 8px; border-color: var(--c-ai); } .tag.ai b { color: var(--c-ai); } .tag.ai b i { background: var(--c-ai); }
+  .tag.hand { right: 8px; bottom: 8px; border-color: var(--c-hand); } .tag.hand b { color: var(--c-hand); } .tag.hand b i { background: var(--c-hand); }
+  .cap { margin: 6px 2px 0; font-size: 11.5px; color: var(--sub); text-align: center; }
+  @media (max-width: 460px) { #stage { height: 440px; } .tag { width: 146px; font-size: 10.5px; padding: 5px 7px; } .tag b { font-size: 12.5px; } }
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="lines"></svg>
+  <div class="tag link" data-k="link"><b><i></i>連携</b><ul><li>上位システム連携</li><li>設備連携</li><li>稼働の見える化・予兆検知</li></ul></div>
+  <div class="tag move" data-k="move"><b><i></i>移動</b><ul><li>人と同じ空間での協働</li></ul></div>
+  <div class="tag ai" data-k="ai"><b><i></i>AI</b><ul><li>言葉での作業指示（VLA）</li><li>実演からの動作学習</li><li>ばら積み部品のピッキング</li><li>失敗の自己検知・自動復旧</li></ul></div>
+  <div class="tag hand" data-k="hand"><b><i></i>手・腕</b><ul><li>多指ハンド</li><li>双腕化</li><li>ハンド・工具の自動交換</li></ul></div>
+</div>
+<p class="cap">Q5-1 の各行が、LexxMoMa R1 のどこに関わるかの目安（色＝分類）</p>
+<script src="vendor/three.min.js?r128"></script>
+<script src="moma-model.js?v=2"></script>
+<script>
+(function () {
+  var host = document.getElementById('stage'), svg = document.getElementById('lines');
+  var V3 = function (x, y, z) { return new THREE.Vector3(x || 0, y || 0, z || 0); };
+  var renderer;
+  try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); } catch (e) { return; }
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.shadowMap.enabled = true;
+  host.insertBefore(renderer.domElement, svg);
+  var scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(30, 1.6, 0.1, 50);
+  scene.add(new THREE.HemisphereLight('#ffffff', '#cfd8e0', 0.85));
+  var sun = new THREE.DirectionalLight('#ffffff', 0.75); sun.position.set(2.5, 5, 3); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+  Object.assign(sun.shadow.camera, { left: -2, right: 2, top: 2, bottom: -2 }); scene.add(sun);
+  var floor = new THREE.Mesh(new THREE.CircleGeometry(2.6, 48), new THREE.MeshStandardMaterial({ color: '#eef2f5', roughness: 0.95 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+  var grid = new THREE.GridHelper(5, 20, '#d7dee5', '#e3e9ee'); grid.position.y = 0.002; scene.add(grid);
+
+  // R1（他の 3D と同じ形）。腕は前（+x）へ伸ばし、手先を少し下へ
+  var M = MomaModel(), R = M.BODIES.lexx();
+  R.g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  scene.add(R.g); R.g.updateMatrixWorld(true);
+  R.arm.ik(V3(0.98, 0.98, 0.05), true); R.arm.setFingers(0.6); R.g.updateMatrixWorld(true);
+  var tip = R.arm.tipW();
+  // 手首のカメラ（認識の目）
+  var camG = new THREE.Group(); camG.position.copy(tip).add(V3(-0.13, 0.1, 0)); scene.add(camG);
+  M.box(camG, 0.07, 0.05, 0.09, '#2a3036', 0, 0, 0); M.cyl(camG, 0.018, 0.02, '#111', 0.04, -0.005, 0, 'x');
+
+  // 分類ごとの色と、R1 の上の目印（光る形）
+  var C = { link: '#0068B7', move: '#e07b24', ai: '#8a5cc7', hand: '#23964f' };
+  var glow = function (color, op) { return new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: op, depthWrite: false, side: THREE.DoubleSide }); };
+  var fx = [];
+  // 連携：前面の制御盤から外へ広がる輪（信号）
+  var panel = V3(0.37, 0.55, 0);
+  [0, 1, 2].forEach(function (i) {
+    var r = new THREE.Mesh(new THREE.RingGeometry(0.1, 0.115, 40), glow(C.link, 0.6)); r.rotation.y = Math.PI / 2; r.position.copy(panel).add(V3(0.02, 0, 0)); scene.add(r);
+    fx.push(function (t) { var k = ((t * 0.45 + i / 3) % 1); r.scale.setScalar(1 + k * 2.4); r.material.opacity = 0.65 * (1 - k); r.position.x = panel.x + 0.02 + k * 0.25; });
+  });
+  // 移動：床の上の輪と、走る向きの矢印
+  var ring = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.68, 64), glow(C.move, 0.55)); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.006; scene.add(ring);
+  var arrowShape = new THREE.Shape(); arrowShape.moveTo(0, 0.09); arrowShape.lineTo(0.16, 0); arrowShape.lineTo(0, -0.09); arrowShape.lineTo(0.04, 0);
+  var arrow = new THREE.Mesh(new THREE.ShapeGeometry(arrowShape), glow(C.move, 0.8)); arrow.rotation.x = -Math.PI / 2; arrow.position.set(-0.1, 0.008, 0.82); scene.add(arrow);
+  fx.push(function (t) { ring.material.opacity = 0.35 + 0.25 * Math.sin(t * 2.2); arrow.position.x = -0.1 + 0.08 * Math.sin(t * 2.2); });
+  // AI：手首のカメラから前下へ見る範囲（円すい）
+  var look = V3(1.42, 0.25, 0.05), from = camG.position.clone(), dir = look.clone().sub(from), len = dir.length();
+  var cone = new THREE.Mesh(new THREE.ConeGeometry(0.26, len, 40, 1, true), glow(C.ai, 0.16));
+  cone.position.copy(from).add(dir.clone().multiplyScalar(0.5)); cone.quaternion.setFromUnitVectors(V3(0, -1, 0), dir.clone().normalize()); scene.add(cone);
+  var spot = new THREE.Mesh(new THREE.CircleGeometry(0.26, 40), glow(C.ai, 0.28)); spot.rotation.x = -Math.PI / 2; spot.position.set(look.x, 0.007, look.z); scene.add(spot);
+  fx.push(function (t) { cone.material.opacity = 0.12 + 0.06 * Math.sin(t * 2.6); });
+  // 手・腕：手先を包む光る球
+  var orb = new THREE.Mesh(new THREE.SphereGeometry(0.17, 28, 18), glow(C.hand, 0.18)); orb.position.copy(tip); scene.add(orb);
+  fx.push(function (t) { orb.scale.setScalar(1 + 0.08 * Math.sin(t * 3)); });
+
+  // ラベルから引く線の先（ワールド座標）
+  var ANCHOR = { link: panel, move: V3(0.05, 0.085, 0.31), ai: camG.position, hand: tip };
+  var lines = {};
+  Object.keys(ANCHOR).forEach(function (k) {
+    var l = document.createElementNS('http://www.w3.org/2000/svg', 'line'); l.setAttribute('stroke', C[k]); l.setAttribute('stroke-width', '2'); l.setAttribute('stroke-dasharray', '5 4');
+    var d = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); d.setAttribute('r', '5'); d.setAttribute('fill', C[k]); d.setAttribute('stroke', '#fff'); d.setAttribute('stroke-width', '2');
+    svg.appendChild(l); svg.appendChild(d); lines[k] = { l: l, d: d, tag: host.querySelector('.tag.' + k) };
+  });
+
+  var target = V3(0.45, 0.7, 0.05), W = 1, H = 1;
+  function resize() {
+    W = host.clientWidth || 300; H = host.clientHeight || 300;
+    renderer.setSize(W, H, false); renderer.domElement.style.width = '100%'; renderer.domElement.style.height = '100%';
+    camera.aspect = W / H; camera.updateProjectionMatrix();
+  }
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(host); resize();
+  function draw(t) {
+    // ゆっくり左右に振って、立体に見せる（ラベルが読める範囲で）
+    var az = 0.62 + 0.32 * Math.sin(t * 0.35), el = 0.32, dist = W / H < 1 ? 5.6 : 4.5;
+    camera.position.set(target.x + Math.sin(az) * Math.cos(el) * dist, target.y + Math.sin(el) * dist, target.z + Math.cos(az) * Math.cos(el) * dist);
+    camera.lookAt(target);
+    fx.forEach(function (f) { f(t); });
+    renderer.render(scene, camera);
+    var hr = host.getBoundingClientRect();
+    Object.keys(lines).forEach(function (k) {
+      var p = ANCHOR[k].clone().project(camera), x = (p.x + 1) / 2 * W, y = (1 - p.y) / 2 * H;
+      var tr = lines[k].tag.getBoundingClientRect(), tx = Math.min(Math.max(x, tr.left - hr.left), tr.right - hr.left), ty = Math.min(Math.max(y, tr.top - hr.top), tr.bottom - hr.top);
+      lines[k].l.setAttribute('x1', tx); lines[k].l.setAttribute('y1', ty); lines[k].l.setAttribute('x2', x); lines[k].l.setAttribute('y2', y);
+      lines[k].d.setAttribute('cx', x); lines[k].d.setAttribute('cy', y);
+    });
+  }
+  // 画面に見えている間だけ動かす（埋め込みの中なので、親の画面での枠の位置で判断する）
+  function onScreen() {
+    try {
+      var fe = window.frameElement; if (!fe) return document.visibilityState !== 'hidden';
+      if (!fe.getClientRects().length || parent.document.visibilityState === 'hidden') return false;
+      var r = fe.getBoundingClientRect(); return r.bottom > 0 && r.top < parent.innerHeight;
+    } catch (e) { return true; }
+  }
+  var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches, t0 = performance.now();
+  draw(0);
+  if (!still) (function loop(now) { if (onScreen()) draw((now - t0) / 1000); requestAnimationFrame(loop); })(t0);
+})();
+</script>
+</body>
+</html>
