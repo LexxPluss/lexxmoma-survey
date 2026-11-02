@@ -35,7 +35,7 @@ window.SURVEY_CONFIG = {
   // 入口の合言葉を変換した文字列（作り方は password-tool.html を開いてください）
   // 合言葉そのものはここに書かないでください（このファイルは公開されます）。
   // 空 '' にすると合言葉なしで入れます。
-  PASSWORD_HASH: '49ae608778d83446765c3b9d6cf22830817475b9b3a1752cf53c380dcf7d8dd7',
+  PASSWORD_HASH: '337b8d2c1e132acd75171f1acf0e73b20bc9541720d5003813f59ef0ad51f86f',
 
   // 合言葉を覚えておく時間（時間）。0 にすると毎回入力になります。
   REMEMBER_HOURS: 12,
