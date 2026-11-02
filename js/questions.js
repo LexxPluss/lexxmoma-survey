@@ -102,7 +102,7 @@ window.SURVEY_FORM = {
      "title": "Q2-2 その理由をお答えください",
      "help": "",
      "entry": 1069988039,
-     "required": false,
+     "required": true,
      "no": "Q2-2"
     }
    ]
@@ -332,29 +332,12 @@ window.SURVEY_FORM = {
     {
      "kind": "question",
      "id": 1518567842,
-     "type": "radio",
-     "title": "Q5-2 今後の進め方として、最も希望に近いものをお選びください。",
+     "type": "paragraph",
+     "title": "Q5-2 技術開発について、もし共同で取り組むとするとどのようなことを実施してみたいですか？",
      "help": "",
      "entry": 2016806689,
      "required": true,
-     "no": "Q5-2",
-     "choices": [
-      {
-       "value": "具体的な工程の適用可否について相談したい"
-      },
-      {
-       "value": "標準化・技術開発について意見交換したい"
-      },
-      {
-       "value": "関係部署・担当者への紹介を検討できる"
-      },
-      {
-       "value": "まずは追加資料・実績を確認したい"
-      },
-      {
-       "value": "今回は意見提供のみとしたい"
-      }
-     ]
+     "no": "Q5-2"
     }
    ]
   },
