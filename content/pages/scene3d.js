@@ -569,7 +569,7 @@ window.FactoryScene = function (host, ui) {
       bot.turn(-Math.PI * 1.5); bot.go(X0 - 0.45, LN); bot.turn(-Math.PI * 2);
       bot.call(function () { bot.h = 0; bot.lastH = 0; });
     };
-    cells.push({ name: '完成部品のセットパック', short: 'セットパック', view: { az: 1.35, el: 0.45, w: 3.0, d: 1.6 }, at: V3(X0 + N * P / 2 - 0.4, 0.8, 3.0), bot: bot, tick: function () {} });
+    cells.push({ name: '完成部品のセットパック', short: 'セットパック', view: { az: -1.5708, el: 0.22, w: 1.1, d: 1.0 }, at: V3(X0 + N * P / 2 - 0.4, 0.8, 3.0), bot: bot, tick: function () {} });
   })();
 
   /* ⑤ 生産ライン横の部品供給：詳しい表示（supply.html）と同じ棚・MoMa・作業者・動きを、そのまま工場の中に置く
