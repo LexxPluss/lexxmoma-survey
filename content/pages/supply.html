@@ -266,7 +266,7 @@ class Orbit {
     this.cam = cam; this.dom = dom; this.target = V3(); this.r = 6; this.th = 0.8; this.ph = 1.0;
     this.ptr = new Map(); this.onChange = null;
     dom.addEventListener('contextmenu', e => e.preventDefault());
-    dom.addEventListener('pointerdown', e => { dom.setPointerCapture(e.pointerId); this.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY, b: e.button, s: e.shiftKey || e.ctrlKey || e.metaKey }); });
+    dom.addEventListener('pointerdown', e => { try { parent.postMessage({ type: 'usecase-user' }, location.origin); } catch (err) { } dom.setPointerCapture(e.pointerId); this.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY, b: e.button, s: e.shiftKey || e.ctrlKey || e.metaKey }); });
     dom.addEventListener('pointermove', e => this.move(e));
     const up = e => { this.ptr.delete(e.pointerId); this.pinch = null; };
     dom.addEventListener('pointerup', up); dom.addEventListener('pointercancel', up);

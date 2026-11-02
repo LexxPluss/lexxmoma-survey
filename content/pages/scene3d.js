@@ -160,6 +160,29 @@ window.FactoryScene = function (host, ui) {
     b.turn = function (h) {                 // その場で向きを変える（2輪駆動）
       act({ start: function () { this.h0 = b.h; this.dur = Math.abs(h - b.h) / 1.6 + 0.3; }, update: function (p) { b.h = this.h0 + (h - this.h0) * ease(p); } });
     };
+    function wrap(a) { while (a > Math.PI) a -= 2 * Math.PI; while (a <= -Math.PI) a += 2 * Math.PI; return a; }
+    b.face = function (h) {                 // h の向きへ、近い回り方で向き直る
+      act({ start: function () { this.h0 = b.h; this.h1 = b.h + wrap(h - b.h); this.dur = Math.abs(this.h1 - this.h0) / 1.6 + (Math.abs(this.h1 - this.h0) > 0.01 ? 0.3 : 0); },
+            update: function (p) { b.h = this.h0 + (this.h1 - this.h0) * ease(p); } });
+    };
+    // (tx, tz) へ L字に走る：今の向きの軸に沿って角まで走り、その場で向きを変えて、もう一方の軸へ。
+    // 逆向きに走るほうが近いときは、向きを変えずに後ろへ走る（2輪駆動）。最後に th の向きへ
+    b.route = function (tx, tz, th) {
+      b.call(function () {
+        var q = b.queue; b.queue = [];
+        var ch = b.h, px = b.x, pz = b.z, alongX = Math.abs(Math.cos(ch)) > 0.5;
+        (alongX ? [[tx, pz], [tx, tz]] : [[px, tz], [tx, tz]]).forEach(function (p) {
+          var dx = p[0] - px, dz = p[1] - pz;
+          if (Math.abs(dx) + Math.abs(dz) < 1e-3) return;
+          var h = Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? 0 : Math.PI) : (dz < 0 ? Math.PI / 2 : -Math.PI / 2);
+          if (Math.abs(wrap(h - ch)) > Math.PI / 2 + 0.01) h = wrap(h + Math.PI);   // 後ろへ走る
+          if (Math.abs(wrap(h - ch)) > 0.01) { b.face(h); ch = h; }
+          b.go(p[0], p[1]); px = p[0]; pz = p[1];
+        });
+        if (th != null && Math.abs(wrap(th - ch)) > 0.01) b.face(th);
+        b.queue = b.queue.concat(q);
+      });
+    };
     b.armTo = function (fn, dur) {          // fn：手首の目標（ワールド座標）を返す関数、または台車に対する決まった姿勢
       act({ dur: dur || 0.9, start: function () { this.a = b.wristL.clone(); this.b = fn.isVector3 ? fn.clone() : R.g.worldToLocal(fn()); },
             update: function (p) { b.wristL.copy(this.a).lerp(this.b, ease(p)); } });
@@ -227,20 +250,24 @@ window.FactoryScene = function (host, ui) {
   var grid = new THREE.GridHelper(32, 64, '#dbe2e8', '#e8edf1'); grid.position.set((F.x0 + F.x1) / 2, 0.002, (F.z0 + F.z1) / 2); scene.add(grid);
   // 区域：部品製造・検査・物流・組立ライン
   plane(-14.5, -4.2, -5.6, 6.8, '#7b8794', 0.05); outline(-14.5, -4.2, -5.6, 6.8, '#b7c3cd'); floorText('部品製造', -11.9, 6.0, 4.4);
-  plane(-3.4, 3.4, -2.2, 4.4, '#7b8794', 0.05); outline(-3.4, 3.4, -2.2, 4.4, '#b7c3cd'); floorText('検査', -1.9, 3.75, 2.6);
+  plane(-3.4, 3.4, -1.2, 5.4, '#7b8794', 0.05); outline(-3.4, 3.4, -1.2, 5.4, '#b7c3cd'); floorText('検査', -2.3, 4.9, 2.2);
   plane(4.4, 15, -0.6, 6.8, '#7b8794', 0.05); outline(4.4, 15, -0.6, 6.8, '#b7c3cd'); floorText('物流', 6.1, 6.0, 2.8);
   floorText('組立ライン', 0.6, -8.0, 4.0);
-  arrow(-4.0, 1.0, -3.5, 1.0); arrow(3.5, 1.4, 4.4, 1.4); arrow(10.0, -0.4, 10.0, -2.6);   // 製造 → 検査 → 物流 → ライン
+  arrow(-4.0, 1.0, -3.5, 1.0); arrow(3.5, 1.4, 4.4, 1.4); arrow(7.6, -0.4, 7.6, -2.6);   // 製造 → 検査 → 物流 → ライン
   [[-14.5, -7, 'B21'], [-4.2, 6.8, 'B24'], [3.8, -2.6, 'C12'], [15.2, 6.8, 'C15']].forEach(function (p) { pillar(p[0], p[1], p[2]); });
 
   var cells = [];
 
-  /* ① 研削・切削設備への部品の設置：加工機2台。終わった加工機の前へ走り、その後ろの台車から材料を取って入れる。加工済みは台車へ */
+  // 台車の上の置き場所（台車の向きに合わせてワールド座標にする）
+  function cartAt(c, lx, lz) { c.updateMatrixWorld(true); return c.localToWorld(V3(lx, 0.85, lz)); }
+
+  /* ① 研削・切削設備への部品の設置：加工機2台を L字の通路の角の両側に。終わった加工機の前へ走り（角で向きを変える）、
+     向かいの台車から材料を取って入れ、加工済みは台車へ戻す */
   (function () {
-    var X = -9.4, Z = -2.2, MZ = -3.65, TABLE = 0.86, CZ = Z + 1.3;
-    aisle(X - 2.6, X + 2.6, Z - 0.55, Z + 0.55);
-    var ms = [X - 1.5, X + 1.5].map(function (mx, i) {
-      var g = new THREE.Group(); g.position.set(mx, 0, MZ); scene.add(g);   // 加工機：扉は +z（LexxMoMa の方）
+    var X = -9.4, Z = -2.2, TABLE = 0.86;
+    aisle(X - 2.2, X + 1.5, Z - 0.55, Z + 0.55); aisle(X + 0.4, X + 1.5, Z - 1.85, Z - 0.55);   // L字の通路
+    function cnc(cx, cz, ry) {                // 加工機（扉は機械の +z の面）
+      var g = new THREE.Group(); g.position.set(cx, 0, cz); g.rotation.y = ry; scene.add(g);
       var body = mat('#e3e8ec'), trim = mat('#0b4f8f');
       box(g, 1.7, 0.75, 1.3, body, 0, 0.375, 0); box(g, 1.7, 0.55, 1.3, body, 0, 1.775, 0);
       box(g, 0.45, 0.7, 1.3, body, -0.625, 1.15, 0); box(g, 0.45, 0.7, 1.3, body, 0.625, 1.15, 0);
@@ -248,28 +275,34 @@ window.FactoryScene = function (host, ui) {
       box(g, 0.8, 0.02, 0.6, '#9aa5ae', 0, TABLE - 0.01, 0.2);
       box(g, 0.28, 0.4, 0.06, '#2b3135', 0.62, 1.25, 0.66);
       var door = box(g, 0.82, 0.7, 0.03, new THREE.MeshStandardMaterial({ color: '#9fc3e0', transparent: true, opacity: 0.55 }), 0, 1.15, 0.64);
-      var m = { x: mx, door: door, lamp: stackLamp(g, 0.7, 2.18, 0.45), IN: V3(mx, TABLE + 0.05, MZ + 0.3), open: 0, doneAt: i * 7, part: part(DONE), raw: [], out: [] };
-      shade(g);
+      var m = { door: door, lamp: stackLamp(g, 0.7, 2.18, 0.45), open: 0, doneAt: 0, part: part(DONE), raw: [], out: [] };
+      shade(g); g.updateMatrixWorld(true);
+      m.IN = g.localToWorld(V3(0, TABLE + 0.05, 0.35));
       scene.add(m.part); m.part.position.copy(m.IN);
-      cart(mx, CZ);
-      m.refill = function () { while (m.raw.length < 2) { var q = part(RAW); scene.add(q); m.raw.push(q); } m.raw.forEach(function (o, k) { o.position.set(mx - 0.3 + k * 0.26, 0.85, CZ); }); };
-      m.refill();
       return m;
+    }
+    var ms = [cnc(X - 1.4, -3.65, 0), cnc(X + 2.3, Z - 1.2, -Math.PI / 2)];
+    ms[0].stop = [X - 1.4, Z, 0]; ms[0].cart = cart(X - 1.4, Z + 1.3);                         // 角の手前：加工機は北、台車は南
+    ms[1].stop = [X + 0.95, Z - 1.2, Math.PI / 2]; ms[1].cart = cart(X - 0.1, Z - 1.2, Math.PI / 2);   // 角の先：加工機は東、台車は西
+    ms[1].doneAt = 7;
+    ms.forEach(function (m) {
+      m.refill = function () { while (m.raw.length < 2) { var q = part(RAW); scene.add(q); m.raw.push(q); } m.raw.forEach(function (o, k) { o.position.copy(cartAt(m.cart, -0.3 + k * 0.26, 0)); }); };
+      m.refill();
     });
-    var bot = Bot(ms[0].x, Z, 0), turn = 0;
+    var bot = Bot(ms[0].stop[0], Z, 0), turn = 0;
     bot.script = function () {
       var m = ms[turn++ % ms.length];
-      bot.drive(m.x);
+      bot.route(m.stop[0], m.stop[1], m.stop[2]);
       bot.until(function () { return clock >= m.doneAt; });
       bot.act({ dur: 0.7, update: function (p) { m.open = p; } });
       bot.pick(function () { return m.part; }, function () { return m.IN.clone(); });
-      bot.place(function () { return V3(m.x + 0.3, 0.85, CZ - 0.1 + (m.out.length % 2) * 0.2); }, function (o) { m.out.push(o); if (m.out.length > 2) scene.remove(m.out.shift()); });
+      bot.place(function () { return cartAt(m.cart, 0.3, (m.out.length % 2) * 0.2 - 0.1); }, function (o) { m.out.push(o); if (m.out.length > 2) scene.remove(m.out.shift()); });
       bot.pick(function () { return m.raw[0]; }, function () { return m.raw[0].position.clone(); }, function () { m.raw.shift(); m.refill(); });
       bot.place(function () { return m.IN.clone(); }, function (o) { m.part = o; });
       bot.act({ dur: 0.7, update: function (p) { m.open = 1 - p; } });
       bot.call(function () { m.doneAt = clock + 14; m.part.userData.finishAt = m.doneAt; });
     };
-    cells.push({ name: '研削・切削設備への部品の設置', short: '研削・切削', view: { az: 0.3, el: 0.72, w: 3.2, d: 1.9 }, at: V3(X, 0.8, Z - 0.5), bot: bot,
+    cells.push({ name: '研削・切削設備への部品の設置', short: '研削・切削', view: { az: 0.45, el: 0.8, w: 2.9, d: 2.1 }, at: V3(X + 0.2, 0.8, Z - 0.8), bot: bot,
       tick: function () {
         ms.forEach(function (m) {
           m.door.position.y = 1.15 + m.open * 0.62;
@@ -279,68 +312,79 @@ window.FactoryScene = function (host, ui) {
       } });
   })();
 
-  /* ② 板金・樹脂部品の設置：溶接ロボット2台。溶接が終わった治具の前へ走り、その後ろの台車から部品を取って置く */
+  /* ② 板金・樹脂部品の設置：溶接の区画2つを L字の通路の角の両側に。溶接が終わった治具の前へ走り、向かいの台車から部品を取って置く */
   (function () {
-    var X = -9.4, Z = 2.4, JZ = 3.75, CZ = Z - 1.3;
-    aisle(X - 2.6, X + 2.6, Z - 0.55, Z + 0.55);
+    var X = -9.4, Z = 2.4;
+    aisle(X - 2.2, X + 1.4, Z - 0.55, Z + 0.55); aisle(X + 0.3, X + 1.4, Z + 0.55, Z + 2.45);   // L字の通路
     var fence = new THREE.MeshStandardMaterial({ color: '#c9d0d6', transparent: true, opacity: 0.35, side: THREE.DoubleSide }), post = mat('#f2c230');
-    [-3.1, 0, 3.1].forEach(function (dx) { [3.35, 6.2].forEach(function (z) { box(scene, 0.06, 1.8, 0.06, post, X + dx, 0.9, z); }); });
-    [[-3.1, 4.78, 2.85, 'z'], [3.1, 4.78, 2.85, 'z'], [0, 4.78, 2.85, 'z'], [0, 6.2, 6.2, 'x']].forEach(function (p) {
-      box(scene, p[3] === 'x' ? p[2] : 0.02, 1.5, p[3] === 'z' ? p[2] : 0.02, fence, X + p[0], 0.95, p[1]);
-      box(scene, p[3] === 'x' ? p[2] : 0.04, 0.04, p[3] === 'z' ? p[2] : 0.04, post, X + p[0], 1.72, p[1]);
-    });
     var curtain = new THREE.MeshStandardMaterial({ color: '#f2c230', emissive: '#f2c230', emissiveIntensity: 0.5 });
+    function cage(x0, x1, z0, z1, open) {    // 柵（open の辺は入口：光の柵）
+      [[x0, z0], [x1, z0], [x0, z1], [x1, z1]].forEach(function (p) { box(scene, 0.06, 1.8, 0.06, post, p[0], 0.9, p[1]); });
+      [['n', (x0 + x1) / 2, z0, x1 - x0, 'x'], ['s', (x0 + x1) / 2, z1, x1 - x0, 'x'], ['w', x0, (z0 + z1) / 2, z1 - z0, 'z'], ['e', x1, (z0 + z1) / 2, z1 - z0, 'z']].forEach(function (p) {
+        var isX = p[4] === 'x';
+        if (p[0] === open) {
+          [-1, 1].forEach(function (s) { var px = isX ? p[1] + s * 0.8 : p[1], pz = isX ? p[2] : p[2] + s * 0.8;
+            box(scene, 0.07, 1.4, 0.07, '#2b3135', px, 0.7, pz); box(scene, isX ? 0.03 : 0.02, 1.2, isX ? 0.02 : 0.03, curtain, px, 0.75, pz); });
+          return;
+        }
+        box(scene, isX ? p[3] : 0.02, 1.5, isX ? 0.02 : p[3], fence, p[1], 0.95, p[2]);
+        box(scene, isX ? p[3] : 0.04, 0.04, isX ? 0.04 : p[3], post, p[1], 1.72, p[2]);
+      });
+    }
     function plate(resin) {          // 板金（金属の板）と樹脂（黒い成形品）
       var p = new THREE.Group(); box(p, 0.42, 0.04, 0.3, resin ? '#2f3438' : '#b9c2c9', 0, 0, 0, resin ? { roughness: 0.5 } : { metalness: 0.6, roughness: 0.35 });
       p.userData = { size: { x: 0.42, y: 0.04, z: 0.3 }, resin: resin }; return shade(p);
     }
-    var ws = [X - 1.5, X + 1.5].map(function (jx, i) {
-      [-1, 1].forEach(function (s) {   // 入口の光の柵
-        box(scene, 0.07, 1.4, 0.07, '#2b3135', jx + s * 0.8, 0.7, 3.32);
-        box(scene, 0.03, 1.2, 0.02, curtain, jx + s * 0.8, 0.75, 3.28);
-      });
-      var tbl = new THREE.Group(); tbl.position.set(jx, 0, JZ); scene.add(tbl);
+    function station(jx, jz, wx, wz) {      // 溶接治具と溶接ロボット
+      var tbl = new THREE.Group(); tbl.position.set(jx, 0, jz); scene.add(tbl);
       box(tbl, 0.9, 0.8, 0.6, '#5b6670', 0, 0.4, 0);
       [-0.25, 0.25].forEach(function (dx) { [-0.18, 0.18].forEach(function (dz) { box(tbl, 0.05, 0.08, 0.05, '#e5832d', dx, 0.84, dz); }); });
       shade(tbl);
-      shade(box(scene, 0.45, 0.5, 0.45, '#5b6670', jx, 0.25, 5.2));
+      shade(box(scene, 0.45, 0.5, 0.45, '#5b6670', wx, 0.25, wz));
       var wr = new THREE.Group(); scene.add(wr);
-      var arm = M.makeArm(wr, { body: '#f08a24', ring: '#3a4148', tool: '#3a4148', L1: 0.75, L2: 0.75 }, V3(jx, 0.5, 5.2)); shade(wr);
+      var arm = M.makeArm(wr, { body: '#f08a24', ring: '#3a4148', tool: '#3a4148', L1: 0.75, L2: 0.75 }, V3(wx, 0.5, wz)); shade(wr);
       var spark = new THREE.PointLight('#bfe2ff', 0, 3); scene.add(spark);
       var sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(60), 3));
       var sparks = new THREE.Points(sg, new THREE.PointsMaterial({ color: '#ffd27a', size: 0.04 })); sparks.visible = false; scene.add(sparks);
-      cart(jx, CZ);
-      var w = { x: jx, arm: arm, home: V3(jx, 1.55, 4.9), spark: spark, sg: sg, sparks: sparks, t: -1, onJig: null, stock: [], out: [], n: i };
-      w.refill = function () { while (w.stock.length < 2) { var q = plate(w.n++ % 2 === 1); scene.add(q); w.stock.unshift(q); } w.stock.forEach(function (o, k) { o.position.set(jx - 0.22, 0.82 + k * 0.05, CZ); }); };
-      w.refill();
+      var toW = V3(wx - jx, 0, wz - jz).normalize();   // 治具から溶接ロボットへの向き
+      var w = { J: V3(jx, 0.88, jz), arm: arm, home: V3(jx, 1.55, jz).addScaledVector(toW, 1.15), toW: toW, spark: spark, sg: sg, sparks: sparks, t: -1, onJig: null, stock: [], out: [], n: 0 };
       arm.ik(w.home, true);
       return w;
+    }
+    cage(X - 3.0, X - 0.6, 3.35, 6.2, 'n');
+    cage(X + 1.6, X + 3.9, 3.25, 5.5, 'w');
+    var ws = [station(X - 1.6, 3.75, X - 1.6, 5.2), station(X + 2.2, Z + 1.9, X + 3.3, Z + 1.9)];
+    ws[0].stop = [X - 1.6, Z, 0]; ws[0].cart = cart(X - 1.6, Z - 1.3);                          // 角の手前：治具は南、台車は北
+    ws[1].stop = [X + 0.85, Z + 1.9, -Math.PI / 2]; ws[1].cart = cart(X - 0.05, Z + 1.9, Math.PI / 2); ws[1].n = 1;   // 角の先：治具は東、台車は西
+    ws.forEach(function (w) {
+      w.refill = function () { while (w.stock.length < 2) { var q = plate(w.n++ % 2 === 1); scene.add(q); w.stock.unshift(q); } w.stock.forEach(function (o, k) { o.position.copy(cartAt(w.cart, -0.22, 0)).add(V3(0, -0.03 + k * 0.05, 0)); }); };
+      w.refill();
     });
-    var bot = Bot(ws[0].x, Z, 0), turn = 0;
+    var bot = Bot(ws[0].stop[0], Z, 0), turn = 0;
     bot.script = function () {
       var w = ws[turn++ % ws.length];
-      bot.drive(w.x);
+      bot.route(w.stop[0], w.stop[1], w.stop[2]);
       bot.until(function () { return w.t < 0; });
       bot.call(function () {                // 溶接済みがあれば先に取り出す（その場で台本に差し込む）
         var q = bot.queue; bot.queue = [];
         if (w.onJig) {
-          bot.pick(function () { return w.onJig; }, function () { return V3(w.x, 0.88, JZ); }, function () { w.onJig = null; });
-          bot.place(function () { return V3(w.x + 0.24, 0.82, CZ + (w.out.length % 2 ? 0.12 : -0.12)); }, function (o) { w.out.push(o); if (w.out.length > 2) scene.remove(w.out.shift()); });
+          bot.pick(function () { return w.onJig; }, function () { return w.J.clone(); }, function () { w.onJig = null; });
+          bot.place(function () { return cartAt(w.cart, 0.24, w.out.length % 2 ? 0.12 : -0.12).add(V3(0, -0.03, 0)); }, function (o) { w.out.push(o); if (w.out.length > 2) scene.remove(w.out.shift()); });
         }
         bot.pick(function () { return w.stock[w.stock.length - 1]; }, function () { return w.stock[w.stock.length - 1].position.clone(); }, function () { w.stock.pop(); w.refill(); });
-        bot.place(function () { return V3(w.x, 0.88, JZ); }, function (o) { w.onJig = o; });
+        bot.place(function () { return w.J.clone(); }, function (o) { w.onJig = o; });
         bot.call(function () { w.t = 0; });
         bot.queue = bot.queue.concat(q);
       });
     };
-    cells.push({ name: '板金・樹脂部品の設置', short: '板金・樹脂', view: { az: Math.PI - 0.3, el: 0.72, w: 3.2, d: 1.9 }, at: V3(X, 0.8, Z + 0.6), bot: bot,
+    cells.push({ name: '板金・樹脂部品の設置', short: '板金・樹脂', view: { az: 0.5, el: 0.85, w: 3.0, d: 2.3 }, at: V3(X + 0.3, 0.8, Z + 1.2), bot: bot,
       tick: function (dt) {
         ws.forEach(function (w) {
           if (w.t < 0) { w.arm.ik(w.home, true); w.spark.intensity = 0; w.sparks.visible = false; return; }
           w.t += dt;
           var T = w.t, on = T > 1.2 && T < 4.2, s = T < 1.2 ? T / 1.2 : T < 4.2 ? 1 : 1 - (T - 4.2) / 1.2;
-          var seam = V3(w.x - 0.16 + 0.32 * clamp((T - 1.2) / 3, 0, 1), 0.92, JZ);
-          w.arm.ik(w.home.clone().lerp(seam.clone().add(V3(0, 0.05, 0.2)), ease(s)), true);
+          var side = V3(-w.toW.z, 0, w.toW.x), seam = w.J.clone().add(V3(0, 0.04, 0)).addScaledVector(side, -0.16 + 0.32 * clamp((T - 1.2) / 3, 0, 1));
+          w.arm.ik(w.home.clone().lerp(seam.clone().add(V3(0, 0.05, 0)).addScaledVector(w.toW, 0.2), ease(s)), true);
           var metal = w.onJig && !w.onJig.userData.resin;
           w.spark.intensity = on && metal ? 0.8 + Math.random() * 1.4 : 0; w.spark.position.copy(seam).add(V3(0, 0.1, 0));
           w.sparks.visible = on && metal;
@@ -355,12 +399,13 @@ window.FactoryScene = function (host, ui) {
       } });
   })();
 
-  /* ③ 検査機への部品投入と検査記録：検査機3台・台車1台。台車から取り、空いた検査機へ走って入れる。終わった部品は台車へ戻す */
+  /* ③ 検査機への部品投入と検査記録：検査機3台を T字の通路のまわりに、台車1台を T の交わるところに。
+     台車から取り、空いた検査機へ走って（角で向きを変える）入れる。終わった部品は台車へ戻す */
   (function () {
-    var X = 0, Z = 1.6, TRAY_OUT = 0.35, TRAY_IN = -0.25, CZ = Z + 1.3;
-    aisle(X - 2.6, X + 2.6, Z - 0.55, Z + 0.55);
-    var ms = [X - 1.6, X, X + 1.6].map(function (mx) {
-      var g = new THREE.Group(); g.position.set(mx, 0, -0.25); scene.add(g);
+    var X = 0, Z = 1.6;
+    aisle(X - 2.3, X + 2.3, Z - 0.55, Z + 0.55); aisle(X - 0.55, X + 0.55, Z + 0.55, Z + 1.95);   // T字の通路
+    function inspector(cx, cz, ry) {          // 検査機（トレイは機械の +z の面から出入りする）
+      var g = new THREE.Group(); g.position.set(cx, 0, cz); g.rotation.y = ry; scene.add(g);
       var body = mat('#eef1f3'), trim = mat('#0b4f8f');
       box(g, 1.3, 0.8, 1.0, body, 0, 0.4, 0); box(g, 1.3, 0.55, 1.0, body, 0, 1.825, 0);
       [-0.6, 0.6].forEach(function (dx) { box(g, 0.1, 0.75, 1.0, body, dx, 1.175, 0); });
@@ -368,13 +413,13 @@ window.FactoryScene = function (host, ui) {
       box(g, 0.2, 0.1, 0.2, '#1d2226', 0, 1.5, 0);
       var ringM = new THREE.MeshStandardMaterial({ color: '#5AA0DC', emissive: '#5AA0DC', emissiveIntensity: 0.2 });
       var ring = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.015, 8, 24), ringM); ring.rotation.x = Math.PI / 2; ring.position.set(0, 1.44, 0); g.add(ring);
-      shade(g);
-      var tray = box(scene, 0.5, 0.02, 0.4, '#9aa5ae', mx, 0.82, TRAY_OUT); shade(tray);
+      var tray = box(g, 0.5, 0.02, 0.4, '#9aa5ae', 0, 0.82, 0.6);
       var cv = document.createElement('canvas'); cv.width = 256; cv.height = 128;
       var tex = new THREE.CanvasTexture(cv);
-      var screen = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.31), new THREE.MeshBasicMaterial({ map: tex }));
-      screen.position.set(mx, 1.83, 0.26); scene.add(screen);
-      var m = { x: mx, tray: tray, ringM: ringM, t: -1, drawn: 0, onTray: null, records: 0 };
+      var screen = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.31), new THREE.MeshBasicMaterial({ map: tex })); screen.position.set(0, 1.83, 0.51); g.add(screen);
+      shade(g); g.updateMatrixWorld(true);
+      var m = { g: g, tray: tray, ringM: ringM, t: -1, drawn: 0, onTray: null, records: 0, OUT: g.localToWorld(V3(0, 0.88, 0.6)) };
+      m.trayAt = function (lz) { g.updateMatrixWorld(true); return g.localToWorld(V3(0, 0.88, lz)); };
       m.draw = function (state) {
         var x2 = cv.getContext('2d');
         x2.fillStyle = '#10202e'; x2.fillRect(0, 0, 256, 128); x2.textAlign = 'center'; x2.textBaseline = 'middle';
@@ -385,10 +430,12 @@ window.FactoryScene = function (host, ui) {
       };
       m.draw('idle');
       return m;
-    });
-    cart(X, CZ);
+    }
+    var ms = [inspector(X - 1.6, -0.25, 0), inspector(X + 1.6, -0.25, 0), inspector(X, Z + 2.95, Math.PI)];
+    ms[0].stop = [X - 1.6, Z, 0]; ms[1].stop = [X + 1.6, Z, 0]; ms[2].stop = [X, Z + 1.4, -Math.PI / 2];   // 3台目は T の足の先（南向き）
+    var C0 = [X, Z, 0], crt = cart(X, Z - 1.0);                                                         // 台車は T の交わるところ（北側）
     var stock = [], out = [];
-    function refill() { while (stock.length < 2) { var q = part(DONE); scene.add(q); stock.push(q); } stock.forEach(function (o, k) { o.position.set(X - 0.3 + k * 0.26, 0.85, CZ); }); }
+    function refill() { while (stock.length < 2) { var q = part(DONE); scene.add(q); stock.push(q); } stock.forEach(function (o, k) { o.position.copy(cartAt(crt, -0.3 + k * 0.26, 0)); }); }
     refill();
     var bot = Bot(X, Z, 0), turn = 0;
     bot.script = function () {
@@ -396,30 +443,30 @@ window.FactoryScene = function (host, ui) {
       bot.call(function () {                // 検査済みが載っていれば、先に取り出して台車へ戻す（その場で台本に差し込む）
         var q = bot.queue; bot.queue = [];
         if (m.onTray) {
-          bot.drive(m.x);
+          bot.route(m.stop[0], m.stop[1], m.stop[2]);
           bot.until(function () { return m.t < 0; });
-          bot.pick(function () { return m.onTray; }, function () { return V3(m.x, 0.88, TRAY_OUT); }, function () { m.onTray = null; });
-          bot.drive(X);
-          bot.place(function () { return V3(X + 0.3, 0.85, CZ - 0.1 + (out.length % 2) * 0.2); }, function (o) { out.push(o); if (out.length > 2) scene.remove(out.shift()); });
-        } else bot.drive(X);
+          bot.pick(function () { return m.onTray; }, function () { return m.OUT.clone(); }, function () { m.onTray = null; });
+        }
+        bot.route(C0[0], C0[1], C0[2]);
+        if (m.onTray) bot.place(function () { return cartAt(crt, 0.3, (out.length % 2) * 0.2 - 0.1); }, function (o) { out.push(o); if (out.length > 2) scene.remove(out.shift()); });
         bot.pick(function () { return stock[0]; }, function () { return stock[0].position.clone(); }, function () { stock.shift(); refill(); });
-        bot.drive(m.x);
-        bot.place(function () { return V3(m.x, 0.88, TRAY_OUT); }, function (o) { m.onTray = o; });
+        bot.route(m.stop[0], m.stop[1], m.stop[2]);
+        bot.place(function () { return m.OUT.clone(); }, function (o) { m.onTray = o; });
         bot.call(function () { m.t = 0; });
         bot.queue = bot.queue.concat(q);
       });
     };
-    cells.push({ name: '検査機への部品投入と検査記録', short: '検査', view: { az: 0.3, el: 0.72, w: 3.0, d: 1.9 }, at: V3(X, 0.8, Z - 0.5), bot: bot,
+    cells.push({ name: '検査機への部品投入と検査記録', short: '検査', view: { az: 0.35, el: 0.85, w: 2.8, d: 2.6 }, at: V3(X, 0.8, Z + 0.2), bot: bot,
       tick: function (dt) {
         ms.forEach(function (m) {
           m.ringM.emissiveIntensity = 0.2;
           if (m.t < 0) return;
-          var T = (m.t += dt), z;
-          if (T < 0.9) z = TRAY_OUT + (TRAY_IN - TRAY_OUT) * ease(T / 0.9);
-          else if (T < 3.0) { z = TRAY_IN; m.ringM.emissiveIntensity = 0.6 + 0.6 * Math.sin(T * 12); if (!m.drawn) { m.draw('scan'); m.drawn = 1; } }
-          else if (T < 3.9) { if (m.drawn === 1) { m.records++; m.draw('ok'); m.drawn = 2; } z = TRAY_IN + (TRAY_OUT - TRAY_IN) * ease((T - 3.0) / 0.9); }
-          else { z = TRAY_OUT; m.t = -1; m.drawn = 0; }
-          m.tray.position.z = z; if (m.onTray) m.onTray.position.z = z;
+          var T = (m.t += dt), lz;
+          if (T < 0.9) lz = 0.6 - 0.6 * ease(T / 0.9);
+          else if (T < 3.0) { lz = 0; m.ringM.emissiveIntensity = 0.6 + 0.6 * Math.sin(T * 12); if (!m.drawn) { m.draw('scan'); m.drawn = 1; } }
+          else if (T < 3.9) { if (m.drawn === 1) { m.records++; m.draw('ok'); m.drawn = 2; } lz = 0.6 * ease((T - 3.0) / 0.9); }
+          else { lz = 0.6; m.t = -1; m.drawn = 0; }
+          m.tray.position.z = lz; if (m.onTray) m.onTray.position.copy(m.trayAt(lz));
         });
       } });
   })();
@@ -552,26 +599,35 @@ window.FactoryScene = function (host, ui) {
     var BX = { x: 0.335, y: 0.149, z: 0.5 };
     var sup = [], ret = [], anim = null, timer = 5;
     var c0 = crate(C.full, BX); scene.add(c0); sup.push(c0); c0.position.set(LX, SUP + 0.075, laneZ('sup', 0));
-    var stockX = X + 2.0, stockAt = V3(stockX, 0.86, -4.85);
-    cart(stockX, -4.85);
+    // 在庫の台車（東）と空箱の置き台（西）は、通路から南へ分かれた枝の先（L字に曲がって取りに行く）
+    var BRX = X + 2.0, BRZ = -1.95;
+    aisle(BRX - 0.55, BRX + 0.55, -2.9, -1.4);
+    var stockAt = V3(BRX + 0.95, 0.86, BRZ);
+    cart(BRX + 0.95, BRZ, Math.PI / 2);
     var stock = crate(C.full, BX); scene.add(stock); stock.position.copy(stockAt);
-    var dropX = X - 1.9; cart(dropX, -4.85); var dropped = [];
-    var bot = Bot(stockX, -3.62, 0);
+    cart(BRX - 0.95, BRZ, Math.PI / 2); var dropped = [];
+    var bot = Bot(LX, -3.62, 0);
     bot.script = function () {
-      bot.drive(stockX);
+      bot.route(BRX, BRZ, -Math.PI / 2);
       bot.pick(function () { return stock; }, function () { return stockAt.clone(); }, function () { stock = crate(C.full, BX); scene.add(stock); stock.position.copy(stockAt); });
-      bot.drive(LX);
-      bot.until(function () { return sup.length < 2; });
-      bot.place(function () { return V3(LX, SUP + 0.075, laneZ('sup', 1)); }, function (o) { sup.push(o); });
-      bot.call(function () {
-        var e = ret[0];
-        if (!e || Math.abs(e.position.z - laneZ('ret', 0)) > 0.02) return;
-        bot.pick(function () { return ret[0]; }, function () { return ret[0].position.clone(); }, function () { ret.shift(); });
-        bot.drive(dropX);
-        bot.place(function () { return V3(dropX + (dropped.length % 2 ? 0.2 : -0.2), 0.87, -4.85); }, function (o) { dropped.push(o); if (dropped.length > 2) scene.remove(dropped.shift()); });
+      bot.call(function () {                // 返却段に空箱があれば、新しい箱を入れたあと回収して枝の先の置き台へ
+        var q = bot.queue; bot.queue = [];
+        bot.route(LX, -3.62, 0);
+        bot.until(function () { return sup.length < 2; });
+        bot.place(function () { return V3(LX, SUP + 0.075, laneZ('sup', 1)); }, function (o) { sup.push(o); });
+        bot.call(function () {
+          var e = ret[0];
+          if (!e || Math.abs(e.position.z - laneZ('ret', 0)) > 0.02) return;
+          var q2 = bot.queue; bot.queue = [];
+          bot.pick(function () { return ret[0]; }, function () { return ret[0].position.clone(); }, function () { ret.shift(); });
+          bot.route(BRX, BRZ, -Math.PI / 2);
+          bot.place(function () { return V3(BRX - 0.95, 0.87, BRZ + (dropped.length % 2 ? 0.2 : -0.2)); }, function (o) { dropped.push(o); if (dropped.length > 2) scene.remove(dropped.shift()); });
+          bot.queue = bot.queue.concat(q2);
+        });
+        bot.queue = bot.queue.concat(q);
       });
     };
-    cells.push({ name: '生産ライン横の部品供給', short: 'ライン横の部品供給', at: V3(X, 0.9, -5.0), bot: bot,
+    cells.push({ name: '生産ライン横の部品供給', short: 'ライン横の部品供給', view: { az: 0.35, el: 0.75, w: 2.6, d: 2.2 }, at: V3(X + 0.6, 0.9, -4.0), bot: bot,
       tick: function (dt) {
         cars.forEach(function (c) { c.position.x += dt * 0.22; if (c.position.x > 16.6) c.position.x -= 17.1; c.visible = c.position.x > 0.2; });
         sup.forEach(function (c, i) { c.position.z += clamp(laneZ('sup', i) - c.position.z, -dt * 0.6, dt * 0.6); });
@@ -612,11 +668,17 @@ window.FactoryScene = function (host, ui) {
     }
     return dist;
   }
-  var now = -1, cam = { from: null, t: 1, look: V3() }, userAz = 0;
-  function settle() { var v = now < 0 ? ALL : views[now]; return { pos: camPos({ target: v.target, el: v.el, az: v.az + userAz }, v.dist), look: v.target.clone() }; }
+  // 見る人の操作：回す（userAz）・傾ける（userEl）・寄る（userZoom）・ずらす（userPan）
+  var now = -1, cam = { from: null, t: 1, look: V3() }, userAz = 0, userEl = 0, userZoom = 1, userPan = V3();
+  function settle() {
+    var v = now < 0 ? ALL : views[now], t = v.target.clone().add(userPan);
+    return { pos: camPos({ target: t, el: clamp(v.el + userEl, 0.15, 1.5), az: v.az + userAz }, v.dist * userZoom), look: t };
+  }
+  function resetUser() { userAz = 0; userEl = 0; userZoom = 1; userPan.set(0, 0, 0); }
+  function touched() { if (ui && ui.user) ui.user(); }   // 見る人が操作した（見て回るのを少し止める）
   function focus(i) {
     if (i === now) return;
-    now = i; userAz = 0;
+    now = i; resetUser();
     cam.from = { pos: camera.position.clone(), look: cam.look.clone() }; cam.t = 0;
     tags.forEach(function (t) { t.style.display = i < 0 ? '' : 'none'; });
     if (ui && ui.view) ui.view(i);
@@ -645,11 +707,35 @@ window.FactoryScene = function (host, ui) {
     camera.aspect = w / h; camera.updateProjectionMatrix();
     ALL.dist = fitDist(ALL); views.forEach(function (v) { v.dist = fitDist(v); });
   }
-  var drag = null;
-  renderer.domElement.style.touchAction = 'pan-y';
-  renderer.domElement.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, az: userAz }; });
-  window.addEventListener('pointermove', function (e) { if (drag) { userAz = clamp(drag.az - (e.clientX - drag.x) * 0.006, -1.0, 1.0); placeCam(0); render(); } });
+  /* 操作：左ドラッグで回す・傾ける／右ドラッグか Shift＋ドラッグでずらす／一度押したあとホイールで寄る（ページのスクロールを妨げない）／
+     スマホは横のスワイプで回す（縦はページのスクロール）。＋・－・元に戻すは zoom()・reset() から */
+  var drag = null, el = renderer.domElement, armed = false;
+  el.style.touchAction = 'pan-y';
+  el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  el.addEventListener('pointerdown', function (e) {
+    armed = true;
+    drag = { x: e.clientX, y: e.clientY, az: userAz, el: userEl, pan: userPan.clone(), move: e.button === 2 || e.shiftKey, touch: e.pointerType === 'touch' };
+    touched();
+  });
+  window.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (drag.move) {                       // 床に沿ってずらす（画面の右と奥の向きへ）
+      var v = now < 0 ? ALL : views[now], k = v.dist * userZoom * 0.0016, a = v.az + userAz;
+      userPan.copy(drag.pan).add(V3(-Math.cos(a) * dx * k - Math.sin(a) * dy * k, 0, Math.sin(a) * dx * k - Math.cos(a) * dy * k));
+    } else {
+      userAz = drag.az - dx * 0.006;
+      if (!drag.touch) userEl = clamp(drag.el + dy * 0.004, -0.5, 0.6);
+    }
+    placeCam(0); render(); touched();
+  });
   window.addEventListener('pointerup', function () { drag = null; });
+  el.addEventListener('pointerleave', function () { if (!drag) armed = false; });
+  el.addEventListener('wheel', function (e) {
+    if (!armed && !e.ctrlKey) return;      // 押す前はページのスクロールのまま
+    e.preventDefault(); zoom(Math.exp(e.deltaY * 0.0012));
+  }, { passive: false });
+  function zoom(f) { userZoom = clamp(userZoom * f, 0.3, 2.5); placeCam(0); render(); touched(); }
   if (window.ResizeObserver) new ResizeObserver(function () { resize(); placeCam(0); render(); }).observe(host);
 
   function render() { renderer.render(scene, camera); placeTags(); }
@@ -661,6 +747,8 @@ window.FactoryScene = function (host, ui) {
   return {
     names: cells.map(function (c) { return c.name; }),
     focus: focus,
+    zoom: zoom,
+    reset: function () { resetUser(); placeCam(0); render(); },
     tick: function (dt, camDt) {   // dt：動きの進み（倍速込み）、camDt：カメラの寄りの進み（実時間）
       dt = Math.min(dt, 0.1);
       clock += dt;

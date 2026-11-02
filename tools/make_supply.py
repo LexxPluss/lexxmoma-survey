@@ -58,6 +58,9 @@ rep("""/* =====================================================================
    モデル・寸法・動きを直すときは元の shooter-concept.html を直して、作り直してください。
    =====================================================================
    CONFIG（config.js 相当）""")
+# 見る人が視点を動かしたら、外側（見学）に知らせて、次へ進むのを少し止めてもらう
+rep("""    dom.addEventListener('pointerdown', e => { dom.setPointerCapture(e.pointerId);""",
+    """    dom.addEventListener('pointerdown', e => { try { parent.postMessage({ type: 'usecase-user' }, location.origin); } catch (err) { } dom.setPointerCapture(e.pointerId);""")
 # 下に作業名の帯が重なるので、景色を少し上へ寄せて、少し引く
 rep("""  const t = plan.center, f = plan.span * (cam.aspect < 1 ? 1.7 : cam.aspect < 1.3 ? 1.25 : 1);""",
     """  const t = plan.center.clone().add(V3(0, -0.45, 0)), f = 1.1 * plan.span * (cam.aspect < 1 ? 1.7 : cam.aspect < 1.3 ? 1.25 : 1);   // 埋め込み：下の帯の分、景色を上へ""")

@@ -440,3 +440,12 @@ textarea.sv-input { resize: vertical; min-height: 6em; line-height: 1.6; }
 .sv-cases-act { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .sv-cases-ok { color: var(--accent-d, #23864d); font-weight: 700; }
 .sv-locked .sv-q, .sv-locked .sv-nav { opacity: .4; pointer-events: none; filter: grayscale(.4); }
+
+/* 上段：回答が進んだら1行に縮める（「説明を見る」で開く） */
+.intro-bar { display: none; }
+.intro.is-compact:not(.is-open) { display: block; padding: 8px 16px; margin-bottom: 14px; border-left-width: 4px; }
+.intro.is-compact .intro-bar { display: flex; align-items: center; gap: 10px; grid-column: 1 / -1; }
+.intro.is-compact:not(.is-open) .intro-main, .intro.is-compact:not(.is-open) .intro-side { display: none; }
+.intro.is-compact.is-open .intro-bar { margin-bottom: 8px; }
+.intro-bar-title { flex: 1; min-width: 0; font-weight: 700; color: var(--main); font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.intro-toggle { font: inherit; font-size: .8rem; padding: 3px 12px; border-radius: 999px; border: 1px solid var(--main); background: #fff; color: var(--main); cursor: pointer; white-space: nowrap; }

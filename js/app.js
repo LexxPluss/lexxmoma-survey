@@ -139,7 +139,7 @@
     Survey.start({
       form: f,
       holder: $('form-holder'),
-      onPage: function (i) { Content.setSection(i === 'done' ? 'done' : i + 1); if (i !== 'done' && /セクション\s*2/.test(f.pages[i].title || '')) caseGuide(); },
+      onPage: function (i) { Content.setSection(i === 'done' ? 'done' : i + 1); Content.compactIntro(i !== 0); if (i !== 'done' && /セクション\s*2/.test(f.pages[i].title || '')) caseGuide(); },
       onQuestion: function (no) { Content.focusQuestion(no); }
     });
   }

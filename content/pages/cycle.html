@@ -56,11 +56,16 @@
   details ul { margin: 4px 0 0; padding-left: 1.1em; }
   td.name .s { display: none; }
   @media (max-width: 420px) { .kpi { padding: 5px 4px; } .kpi .v { font-size: 1.05rem; } .kpi .l, .kpi .c { font-size: .62rem; } #stage3d { height: 220px; } .tag3d { font-size: 9.5px; } th, td { padding: 4px 3px; } td.name .l { display: none; } td.name .s { display: block; } }
+  /* 全画面（右下のボタン） */
+  .fs { position: absolute; z-index: 4; right: 8px; bottom: 8px; width: 34px; height: 34px; border: 0; border-radius: 8px; background: rgba(16, 24, 32, .55); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .fs:hover { background: rgba(16, 24, 32, .8); }
+  .fs svg { width: 20px; height: 20px; }
+  :fullscreen #stage, :fullscreen#stage, :fullscreen #stage3d, :fullscreen#stage3d { height: 100% !important; }
 </style>
 </head>
 <body>
 <div class="kpis" id="kpis"></div>
-<div id="stage3d"><span class="speed" id="speedV"></span><span id="first">R1 が先に完了</span></div>
+<div id="stage3d"><button type="button" class="fs" id="fs" title="全画面で見る" aria-label="全画面で見る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><span class="speed" id="speedV"></span><span id="first">R1 が先に完了</span></div>
 <table>
   <thead><tr><th>機種</th><th>最高速度<br>m/s</th><th>加速度<br>m/s²</th><th style="text-align:center">走りながら<br>作業</th><th style="text-align:right">1回の時間</th></tr></thead>
   <tbody id="rows"></tbody>
@@ -219,6 +224,21 @@
   document.getElementById('play').addEventListener('click', play);
   build();
   if (!still) play();
+
+  // 全画面：3D の枠だけを画面いっぱいに（もう一度押すと戻る）
+  (function () {
+    var b = document.getElementById('fs'), box = b.parentNode;
+    var on = function () { return document.fullscreenElement || document.webkitFullscreenElement; };
+    if (!(box.requestFullscreen || box.webkitRequestFullscreen)) { b.hidden = true; return; }
+    b.addEventListener('click', function () {
+      if (on()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else (box.requestFullscreen || box.webkitRequestFullscreen).call(box);
+    });
+    var sync = function () { var f = !!on(), t = f ? '全画面を終わる' : '全画面で見る'; b.title = t; b.setAttribute('aria-label', t);
+      b.innerHTML = f ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>'
+                      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>'; };
+    document.addEventListener('fullscreenchange', sync); document.addEventListener('webkitfullscreenchange', sync);
+  })();
 </script>
 </body>
 </html>

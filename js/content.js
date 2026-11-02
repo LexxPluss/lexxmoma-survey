@@ -52,7 +52,7 @@ var Content = (function () {
     }), 10) || 560;
     // 動画・画像と同じく、文章の下に出す。「埋め込み: a.html, b.html」のように並べると、上から順に出す
     return '<div class="card-embeds">' + c.embed.split(/\s*[,、]\s*/).filter(Boolean).map(function (src) {
-      return '<div class="card-embed-box"><iframe src="' + esc(src) + '" title="' + esc(c.title) + '" loading="lazy"' +
+      return '<div class="card-embed-box"><iframe src="' + esc(src) + '" title="' + esc(c.title) + '" loading="lazy" allow="fullscreen" allowfullscreen' +
         ' style="height:' + h + 'px"></iframe></div>';
     }).join('') + '</div>';
   }
@@ -167,6 +167,13 @@ var Content = (function () {
           '<h2>' + esc(c.title) + '</h2><div class="intro-side-text">' + c.html + '</div></aside>';
       }).join('');
     box.classList.toggle('has-side', side.length > 0);
+    // 回答が進んだら1行に縮める（compactIntro）。開くボタンで元に戻せる
+    var bar = document.createElement('div'); bar.className = 'intro-bar';
+    bar.innerHTML = '<span class="intro-bar-title">' + (intro.title ? inline(intro.title) : '') + '</span><button type="button" class="intro-toggle">説明を見る</button>';
+    box.insertBefore(bar, box.firstChild);
+    bar.querySelector('.intro-toggle').addEventListener('click', function () {
+      var open = box.classList.toggle('is-open'); this.textContent = open ? '閉じる' : '説明を見る';
+    });
     box.hidden = false;
   }
 
@@ -321,5 +328,12 @@ var Content = (function () {
       });
   }
 
-  return { load: load, parse: parse, formLoaded: formLoaded, setSection: setSection, configure: configure, focusQuestion: focusQuestion };
+  function compactIntro(on) {   // 上段の説明を1行にする（回答中は場所を取らない）
+    var box = document.getElementById('intro');
+    box.classList.toggle('is-compact', !!on);
+    if (!on) box.classList.remove('is-open');
+    var t = box.querySelector('.intro-toggle'); if (t) t.textContent = '説明を見る';
+  }
+
+  return { load: load, parse: parse, formLoaded: formLoaded, setSection: setSection, configure: configure, focusQuestion: focusQuestion, compactIntro: compactIntro };
 })();
