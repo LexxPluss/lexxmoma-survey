@@ -11,9 +11,10 @@
   #stage { position: relative; height: 320px; overflow: hidden; background: #eef2f5; cursor: grab; }
   #stage::before { content: '3D を読み込み中…'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; }
   #stage canvas { display: block; position: relative; }
-  #speed { position: absolute; z-index: 1; right: 8px; top: 8px; padding: 2px 10px; border-radius: 999px; background: rgba(255,255,255,.85); color: var(--sub); font-size: 12px; }
+  #detail { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }   /* 作業場所ごとの詳しい表示 */
+  #speed { position: absolute; z-index: 2; right: 8px; top: 8px; padding: 2px 10px; border-radius: 999px; background: rgba(255,255,255,.85); color: var(--sub); font-size: 12px; }
   /* 作業名：写真の上の白い太字と暗い帯（資料と同じ見せ方） */
-  #name { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; padding: 10px 12px 12px; background: linear-gradient(transparent, rgba(16, 24, 32, .78) 40%); color: #fff; font-size: 18px; font-weight: 800; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  #name { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; padding: 10px 12px 12px; background: linear-gradient(transparent, rgba(16, 24, 32, .78) 40%); color: #fff; font-size: 18px; font-weight: 800; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
   #list { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 2px 4px; }
   #list button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text); cursor: pointer; }
   #list button[aria-pressed="true"] { background: var(--main); border-color: var(--main); color: #fff; font-weight: 700; }
@@ -21,20 +22,26 @@
 </style>
 </head>
 <body>
-<div id="stage"><span id="speed"></span><div id="name"></div></div>
+<div id="stage"><iframe id="detail" title="作業の詳しい表示" hidden></iframe><span id="speed"></span><div id="name"></div></div>
 <div id="list"></div>
 <script src="vendor/three.min.js?r128"></script>
 <script src="moma-model.js?v=1"></script>
-<script src="scene3d.js?v=7"></script>
+<script src="scene3d.js?v=8"></script>
 <script>
   var SPEED = 2;   // 再生の速さ（実時間の何倍で見せるか）
   var $ = function (id) { return document.getElementById(id); };
   $('speed').textContent = SPEED + '倍速';
   var buttons = [];
+  // 詳しい表示がある作業場所（社内の検討用ビューアから作った表示）。そこでは全体の見学を止めて、その表示を出す
+  var DETAIL = { 0: 'supply.html?v=2&speed=' + SPEED }, paused = false;
   // 作業場所が変わると呼ばれる（最初の呼び出しは最初の tick の中なので、ボタンはできている）
   var sim = window.FactoryScene ? FactoryScene($('stage'), { station: function (i) { show(i); } }) : null;
   function show(i) {
     $('name').textContent = NAMES[i];
+    var d = $('detail');
+    paused = !!DETAIL[i];
+    if (paused) { d.src = DETAIL[i]; d.hidden = false; }   // 毎回最初から
+    else if (!d.hidden) { d.hidden = true; d.removeAttribute('src'); }
     buttons.forEach(function (b, k) { b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); });
   }
   var NAMES = sim ? sim.names : [];
@@ -54,9 +61,13 @@
       return r.bottom > 0 && r.top < parent.innerHeight;
     } catch (e) { return true; }
   }
+  // 詳しい表示が1回分の手順を終えたら、次の作業場所へ
+  window.addEventListener('message', function (e) {
+    if (e.origin === location.origin && e.data && e.data.type === 'usecase-cycle-done' && paused) sim.next();
+  });
   var last = null;
   function frame(now) {
-    if (onScreen()) { if (last != null) sim.tick((now - last) / 1000 * SPEED); last = now; }
+    if (onScreen() && !paused) { if (last != null) sim.tick((now - last) / 1000 * SPEED); last = now; }
     else last = null;
     requestAnimationFrame(frame);
   }

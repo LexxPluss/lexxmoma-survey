@@ -534,6 +534,7 @@ window.FactoryScene = function (host, ui) {
   return {
     names: stations.map(function (s) { return s.name; }),
     jump: jump,
+    next: function () { jump(order[at % order.length]); },   // 順番どおり次の作業場所へ
     tick: function (dt) {
       dt = Math.min(dt, 0.1);
       clock += dt;
