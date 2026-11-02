@@ -143,10 +143,12 @@ body.solo .newwin { display: none; }
 .intro-text p { margin: 0 0 .4em; }
 .intro-text ul { margin: 0; padding-left: 1.2em; color: var(--sub); font-size: .92rem; }
 /* 上段の右の補足（「表示: 上段」のカード） */
-.intro.has-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 24px; align-items: start; }
-.intro-side { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 12px; font-size: .86rem; }
+.intro.has-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 24px; align-items: start; }
+/* 上段の補足：枠や図は付けず、細い線と短い文だけ（説明の邪魔をしない） */
+.intro-side { border-left: 3px solid var(--accent); padding: 2px 0 2px 12px; font-size: .84rem; color: var(--sub); }
 .intro-side img { display: block; width: 100%; height: auto; margin-bottom: 6px; }
-.intro-side h2 { font-size: .95rem; margin: 0 0 4px; color: var(--text); }
+.intro-side h2 { font-size: .86rem; margin: 0 0 2px; color: var(--text); }
+.intro-side-text b, .intro-side-text strong { color: var(--text); }
 .intro-side-text p { margin: 0 0 .3em; }
 .intro-side-text ul { margin: 0; padding-left: 1.2em; }
 @media (max-width: 960px) { .intro.has-side { grid-template-columns: minmax(0, 1fr); gap: 14px; } }
