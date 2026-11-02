@@ -8,48 +8,67 @@
   :root { --main: #0068B7; --main-pale: #e8f1f9; --text: #1f2933; --sub: #5f6b76; --line: #e2e7ec; }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: #fff; color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif; }
-  #stage { position: relative; height: 320px; overflow: hidden; background: #eef2f5; cursor: grab; }
+  #stage { position: relative; height: 340px; overflow: hidden; background: #eef2f5; cursor: grab; }
   #stage::before { content: '3D を読み込み中…'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; }
   #stage canvas { display: block; position: relative; }
-  #detail { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }   /* 作業場所ごとの詳しい表示 */
-  #speed { position: absolute; z-index: 2; right: 8px; top: 8px; padding: 2px 10px; border-radius: 999px; background: rgba(255,255,255,.85); color: var(--sub); font-size: 12px; }
+  #detail { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }   /* 使いどころの詳しい表示 */
+  #speed { position: absolute; z-index: 3; right: 8px; top: 8px; padding: 2px 10px; border-radius: 999px; background: rgba(255,255,255,.85); color: var(--sub); font-size: 12px; }
   /* 作業名：写真の上の白い太字と暗い帯（資料と同じ見せ方） */
-  #name { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; padding: 10px 12px 12px; background: linear-gradient(transparent, rgba(16, 24, 32, .78) 40%); color: #fff; font-size: 18px; font-weight: 800; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  #name { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; padding: 10px 12px 12px; background: linear-gradient(transparent, rgba(16, 24, 32, .78) 40%); color: #fff; font-size: 18px; font-weight: 800; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.5); pointer-events: none; }
+  /* 全体のときの使いどころの札（押すとそこへ寄る） */
+  .tag3d { position: absolute; z-index: 1; left: 0; top: 0; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--main); background: rgba(255,255,255,.94); color: var(--main); font: inherit; font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; box-shadow: 0 1px 4px rgba(0,30,60,.15); }
+  .tag3d:hover { background: var(--main); color: #fff; }
   #list { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 2px 4px; }
   #list button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text); cursor: pointer; }
   #list button[aria-pressed="true"] { background: var(--main); border-color: var(--main); color: #fff; font-weight: 700; }
-  @media (max-width: 420px) { #stage { height: 250px; } #name { font-size: 15px; } #list button { font-size: 11px; } }
+  @media (max-width: 420px) { #stage { height: 270px; } #name { font-size: 15px; } #list button { font-size: 11px; } .tag3d { font-size: 9.5px; padding: 1px 6px; } }
 </style>
 </head>
 <body>
-<div id="stage"><iframe id="detail" title="作業の詳しい表示" hidden></iframe><span id="speed"></span><div id="name"></div></div>
+<div id="stage"><iframe id="detail" title="使いどころの詳しい表示" hidden></iframe><span id="speed"></span><div id="name"></div></div>
 <div id="list"></div>
 <script src="vendor/three.min.js?r128"></script>
-<script src="moma-model.js?v=1"></script>
-<script src="scene3d.js?v=8"></script>
+<script src="moma-model.js?v=2"></script>
+<script src="scene3d.js?v=18"></script>
 <script>
   var SPEED = 2;   // 再生の速さ（実時間の何倍で見せるか）
+  // 使いどころの詳しい表示（社内の検討用ビューアから作った表示）。寄ったあと、その表示に切り替える
+  var DETAIL = { 4: 'supply.html?v=2&speed=' + SPEED };
+  // 自動で見て回る順番と、それぞれを見せる秒数（-1 は工場全体。詳しい表示は1回分が終わるまで）
+  var TOUR = [[-1, 8], [0, 12], [1, 12], [2, 12], [3, 12], [4, 70]];
   var $ = function (id) { return document.getElementById(id); };
   $('speed').textContent = SPEED + '倍速';
-  var buttons = [];
-  // 詳しい表示がある作業場所（社内の検討用ビューアから作った表示）。そこでは全体の見学を止めて、その表示を出す
-  var DETAIL = { 0: 'supply.html?v=2&speed=' + SPEED }, paused = false;
-  // 作業場所が変わると呼ばれる（最初の呼び出しは最初の tick の中なので、ボタンはできている）
-  var sim = window.FactoryScene ? FactoryScene($('stage'), { station: function (i) { show(i); } }) : null;
-  function show(i) {
-    $('name').textContent = NAMES[i];
+  var buttons = [], names = [], cur = -2, tourAt = 0, tourT = 0, detailTimer = null;
+
+  function view(i) {                       // 表示が変わったとき（3D から呼ばれる）
+    cur = i;
+    $('name').textContent = i < 0 ? '工場全体：5つの使いどころ' : names[i];
+    buttons.forEach(function (b, k) { b.setAttribute('aria-pressed', k - 1 === i ? 'true' : 'false'); });
     var d = $('detail');
-    paused = !!DETAIL[i];
-    if (paused) { d.src = DETAIL[i]; d.hidden = false; }   // 毎回最初から
-    else if (!d.hidden) { d.hidden = true; d.removeAttribute('src'); }
-    buttons.forEach(function (b, k) { b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); });
+    clearTimeout(detailTimer);
+    if (!d.hidden) { d.hidden = true; d.removeAttribute('src'); }
+    if (DETAIL[i]) detailTimer = setTimeout(function () { d.src = DETAIL[i]; d.hidden = false; }, 1500);   // 寄り終わってから
+    tourT = 0;
   }
-  var NAMES = sim ? sim.names : [];
-  NAMES.forEach(function (n, i) {
-    var b = document.createElement('button'); b.type = 'button'; b.textContent = n;
-    b.addEventListener('click', function () { sim.jump(i); });
-    $('list').appendChild(b); buttons.push(b);
+  var sim = window.FactoryScene ? FactoryScene($('stage'), { view: function (i) { view(i); } }) : null;
+  if (sim) {
+    names = sim.names;
+    ['工場全体'].concat(names).forEach(function (n, k) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = n;
+      b.addEventListener('click', function () { go(k - 1); });
+      $('list').appendChild(b); buttons.push(b);
+    });
+    view(-1);
+  }
+  function go(i) {                          // ボタンや札で選んだところから、また順に見て回る
+    tourAt = Math.max(0, TOUR.findIndex(function (t) { return t[0] === i; }));
+    sim.focus(i); view(i);
+  }
+  // 詳しい表示が1回分の手順を終えたら、次へ
+  window.addEventListener('message', function (e) {
+    if (e.origin === location.origin && e.data && e.data.type === 'usecase-cycle-done' && DETAIL[cur]) next();
   });
+  function next() { tourAt = (tourAt + 1) % TOUR.length; go(TOUR[tourAt][0]); }
 
   // 画面に見えている間だけ動かす（埋め込みの中なので、親の画面での枠の位置で判断する）
   function onScreen() {
@@ -61,14 +80,16 @@
       return r.bottom > 0 && r.top < parent.innerHeight;
     } catch (e) { return true; }
   }
-  // 詳しい表示が1回分の手順を終えたら、次の作業場所へ
-  window.addEventListener('message', function (e) {
-    if (e.origin === location.origin && e.data && e.data.type === 'usecase-cycle-done' && paused) sim.next();
-  });
   var last = null;
   function frame(now) {
-    if (onScreen() && !paused) { if (last != null) sim.tick((now - last) / 1000 * SPEED); last = now; }
-    else last = null;
+    if (onScreen()) {
+      if (last != null) {
+        var dt = Math.min(0.1, (now - last) / 1000);
+        sim.tick(dt * SPEED, dt);
+        if ((tourT += dt) > TOUR[tourAt][1]) next();
+      }
+      last = now;
+    } else last = null;
     requestAnimationFrame(frame);
   }
   if (sim && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) requestAnimationFrame(frame);
