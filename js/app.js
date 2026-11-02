@@ -139,7 +139,11 @@
     Survey.start({
       form: f,
       holder: $('form-holder'),
-      onPage: function (i) { Content.setSection(i === 'done' ? 'done' : i + 1); Content.compactIntro(i !== 0); if (i !== 'done' && /セクション\s*2/.test(f.pages[i].title || '')) caseGuide(); },
+      onPage: function (i) {
+        Content.setSection(i === 'done' ? 'done' : i + 1); Content.compactIntro(i !== 0);
+        if (i === 0 && once('lexxmoma-panel-popup')) setTimeout(function () { panelPopup(true); }, 300);   // 最初のページ：右側の補足をポップアップで
+        if (i !== 'done' && /セクション\s*2/.test(f.pages[i].title || '')) caseGuide();
+      },
       onQuestion: function (no) { Content.focusQuestion(no); },
       onAnswer: function (no, v) { tellPanels(no, v); }
     });
@@ -155,6 +159,31 @@
     if (e.origin !== location.origin || !e.data || e.data.type !== 'survey-ask' || !window.Survey || !Survey.answerOf) return;
     tellPanels(e.data.no, Survey.answerOf(e.data.no));
   });
+
+  function once(key) {                     // この訪問で初めてなら true（記録できない環境では毎回 true）
+    try { if (sessionStorage.getItem(key) === '1') return false; sessionStorage.setItem(key, '1'); } catch (e) { }
+    return true;
+  }
+
+  /* ---------- セクション1：右側の補足を、最初にポップアップで見せる ---------- */
+  // 右側の列そのものを画面の中央に浮かせる（中の動画・3D を作り直さないため、移したり複製したりしない）。
+  // pre が true なら、上段の「LexxMoMa ができるまで」を先頭に添える（この最初の1回だけ）
+  function panelPopup(pre) {
+    var info = $('info'); if (!info || info.classList.contains('is-popup')) return;
+    var head = document.createElement('div'); head.className = 'popup-head';
+    head.innerHTML = '<span>はじめに：LexxMoMa R1 について</span><button type="button" class="popup-close">閉じて回答へ ✕</button>';
+    info.insertBefore(head, info.firstChild);
+    var preEl = null, side = pre && document.querySelector('#intro .intro-side');
+    if (side) { preEl = document.createElement('div'); preEl.className = 'popup-pre'; preEl.innerHTML = side.innerHTML; info.insertBefore(preEl, $('vision-cards')); }
+    var shade = document.createElement('div'); shade.className = 'popup-shade'; info.parentNode.insertBefore(shade, info);   // 列と同じ重なりの中に置く（列より手前に出ないように）
+    info.classList.add('is-popup'); document.documentElement.classList.add('has-popup'); info.scrollTop = 0;
+    function esc(e) { if (e.key === 'Escape') close(); }
+    function close() {
+      info.classList.remove('is-popup'); document.documentElement.classList.remove('has-popup');
+      head.remove(); if (preEl) preEl.remove(); shade.remove(); document.removeEventListener('keydown', esc);
+    }
+    head.querySelector('.popup-close').addEventListener('click', close); shade.addEventListener('click', close); document.addEventListener('keydown', esc);
+  }
 
   /* ---------- セクション2：先に使いどころの例を見てから回答する案内 ---------- */
   // 右側の3D（content/pages/scene.html）が、見せた使いどころを知らせてくる。5つとも見るまで質問を薄くしておく
@@ -174,9 +203,7 @@
     title.insertAdjacentElement('afterend', g);
     updateCases();
     // ページを開いたら、3D をポップアップで出す（この訪問で1回だけ。閉じたあとは「3Dを見る」で開き直せる）
-    var shown = false;
-    try { shown = sessionStorage.getItem('lexxmoma-scene-popup') === '1'; sessionStorage.setItem('lexxmoma-scene-popup', '1'); } catch (e) { }
-    if (!shown) openScene();
+    if (once('lexxmoma-scene-popup')) openScene();
   }
   function openScene() {                   // 右側の「工場での使いどころの例」の3Dを、ポップアップで開く
     var f = document.querySelector('#info iframe[src*="scene.html"]');
