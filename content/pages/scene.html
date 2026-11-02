@@ -25,12 +25,18 @@
   #zoom button:hover { border-color: var(--main); color: var(--main); }
   #hint { position: absolute; z-index: 3; left: 48px; top: 10px; padding: 1px 8px; border-radius: 999px; background: rgba(255,255,255,.85); color: var(--sub); font-size: 11px; pointer-events: none; }
   /* 見学の進み具合（一巡約38秒）。区切りは工場全体と①〜⑤、長さは見せる秒数 */
-  /* 3D の下の「問い」：その工程を自動化するときに考えたいこと（使いどころごとに変わる） */
-  #ask { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; padding: 8px 10px; border-left: 4px solid var(--accent, #3EB370); border-radius: 6px; background: #f2f9f4; }
-  #ask b { flex: none; padding: 1px 8px; border-radius: 999px; background: #3EB370; color: #fff; font-size: 11px; line-height: 1.6; }
-  #ask span { font-size: 14px; font-weight: 700; line-height: 1.5; color: var(--text); }
+  /* 「問い」：その工程を自動化するときに考えたいこと。プレゼンのように 3D の中央上へ出す（使いどころが変わるたびに出し直す） */
+  #ask { position: absolute; z-index: 3; left: 50%; top: 42px; transform: translateX(-50%); width: max-content; max-width: min(88%, 680px);
+    display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-left: 5px solid #3EB370; border-radius: 12px;
+    background: rgba(255,255,255,.96); box-shadow: 0 6px 24px rgba(0,30,60,.2); pointer-events: none; }
+  #ask b { flex: none; padding: 2px 10px; border-radius: 999px; background: #3EB370; color: #fff; font-size: 12px; line-height: 1.6; }
+  #ask span { font-size: 19px; font-weight: 800; line-height: 1.45; color: var(--text); }
   #ask[hidden] { display: none; }
-  body.is-big #ask { flex: none; margin: 8px 8px 0; }
+  #ask.pop { animation: askpop .5s cubic-bezier(.2, .9, .3, 1.2) both; }
+  @keyframes askpop { from { opacity: 0; translate: 0 -12px; scale: .94; } to { opacity: 1; translate: 0 0; scale: 1; } }   /* 位置（transform）とは別に動かす */
+  @media (max-width: 520px) {   /* スマホ：左の＋－ボタンにかからないよう、その右から端まで */
+    #ask { top: 38px; left: 46px; right: 8px; transform: none; width: auto; max-width: none; padding: 7px 12px; gap: 8px; }
+    #ask b { font-size: 10px; padding: 1px 7px; } #ask span { font-size: 14px; } }
   #prog { display: flex; align-items: center; gap: 8px; padding: 7px 2px 0; }
   #prog .segs { flex: 1; display: flex; gap: 3px; }
   #prog .seg { position: relative; height: 6px; padding: 0; border: 0; border-radius: 3px; background: #e2e7ec; overflow: hidden; cursor: pointer; }
@@ -59,8 +65,7 @@
 </head>
 <body>
 <div id="bigbar"><span>工場での使いどころの例<small>5つを順に案内します（約40秒）</small></span><button type="button" id="bigclose">閉じて回答へ ✕</button></div>
-<div id="stage"><button type="button" class="fs" id="fs" title="大きく見る" aria-label="大きく見る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><iframe id="detail" title="使いどころの詳しい表示" hidden></iframe><span id="speed"></span><div id="zoom"><button type="button" data-z="in" title="寄る" aria-label="寄る">＋</button><button type="button" data-z="out" title="引く" aria-label="引く">－</button><button type="button" data-z="reset" title="元の向きに戻す" aria-label="元の向きに戻す">⟲</button></div><span id="hint"></span><div id="name"></div></div>
-<div id="ask" hidden><b>問い</b><span></span></div>
+<div id="stage"><button type="button" class="fs" id="fs" title="大きく見る" aria-label="大きく見る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><iframe id="detail" title="使いどころの詳しい表示" hidden></iframe><span id="speed"></span><div id="zoom"><button type="button" data-z="in" title="寄る" aria-label="寄る">＋</button><button type="button" data-z="out" title="引く" aria-label="引く">－</button><button type="button" data-z="reset" title="元の向きに戻す" aria-label="元の向きに戻す">⟲</button></div><span id="hint"></span><div id="ask" hidden><b>問い</b><span></span></div><div id="name"></div></div>
 <div id="prog"><div class="segs"></div><span class="t"></span></div>
 <div id="list"></div>
 <script src="vendor/three.min.js?r128"></script>
@@ -90,7 +95,8 @@
   function view(i) {                       // 表示が変わったとき（3D から呼ばれる）
     cur = i;
     $('name').textContent = i < 0 ? '工場全体：5つの使いどころ' : names[i];
-    var ask = ASK[i]; $('ask').hidden = !ask; $('ask').lastChild.textContent = ask || '';
+    var ask = ASK[i], a = $('ask'); a.hidden = !ask; a.lastChild.textContent = ask || '';
+    a.classList.remove('pop'); void a.offsetWidth; a.classList.add('pop');   // パッと出し直す
     buttons.forEach(function (b, k) { b.setAttribute('aria-pressed', k - 1 === i ? 'true' : 'false'); });
     var d = $('detail');
     clearTimeout(detailTimer);
