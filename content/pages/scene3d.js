@@ -1,8 +1,9 @@
-/* 使いどころの 3D シミュレーション（自動車工場でよく見る景色の中で、LexxMoMa が作業をくり返す）。
+/* 使いどころの 3D シミュレーション（自動車工場でよく見る景色の中で、LexxMoMa が作業場所を回る）。
    見た目は shooter-concept.html（方眼の床・通路の青・作業域の緑・Φ28パイプの棚）に合わせています。
    機体の形は moma-model.js（先に読み込む）。
-   使い方：var s = FactoryScene(要素, 'supply' | 'machine' | 'kit', { cap: 文字を出す関数, count: 数を出す関数 }); s.tick(秒) */
-window.FactoryScene = function (host, kind, ui) {
+   1つの工場の床に5つの作業場所を並べ、LexxMoMa が順番に回って作業する。
+   使い方：var s = FactoryScene(要素, { station: 作業場所が変わったときの関数(番号) }); s.tick(秒); s.jump(番号); s.names */
+window.FactoryScene = function (host, ui) {
   if (!window.THREE || !window.MomaModel) return null;
   var V3 = function (x, y, z) { return new THREE.Vector3(x || 0, y || 0, z || 0); };
   var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
@@ -114,10 +115,10 @@ window.FactoryScene = function (host, kind, ui) {
   var R = M.BODIES.lexx(); shade(R.g); scene.add(R.g);
   var HOME = V3(0.08, 1.52, 0.05), CARRY = V3(0.02, 1.42, -0.3);
   var bot = { x: 0, wristL: HOME.clone(), open: 1, held: null, lastX: 0 };
-  var queue = [], cur = null, script = null;
+  var queue = [], cur = null, script = null;   // script：台本が空になったら次の作業を積む関数
   function act(o) { queue.push(Object.assign({ dur: 0 }, o)); }
-  function drive(x, cap) {
-    act({ start: function () { this.x0 = bot.x; this.dur = Math.abs(x - this.x0) / 1.3 + 0.8; if (cap) ui.cap(cap); },
+  function drive(x) {
+    act({ start: function () { this.x0 = bot.x; this.dur = Math.abs(x - this.x0) / 1.3 + 0.8; },
           update: function (p) { bot.x = this.x0 + (x - this.x0) * ease(p); } });
   }
   function armTo(fn, dur) {               // fn：手首の目標（ワールド座標）を返す関数、または台車の上での決まった姿勢
@@ -126,8 +127,7 @@ window.FactoryScene = function (host, kind, ui) {
   }
   function grip(open) { act({ dur: 0.35, start: function () { this.a = bot.open; }, update: function (p) { bot.open = this.a + (open - this.a) * p; } }); }
   function call(fn) { act({ start: fn }); }
-  function wait(sec) { act({ dur: sec }); }
-  function until(cond, cap) { act({ dur: 1e9, until: cond, start: function () { if (cap) ui.cap(cap); } }); }
+  function until(cond) { act({ dur: 1e9, until: cond }); }
   // 中心 c に置く（取る）ときの手首の位置：肩から c へ向かう向きで、手先の分だけ手前
   function wristFor(c, half) {
     var s = R.arm.shoulderW(), d = V3(c.x - s.x, 0, c.z - s.z).normalize();
@@ -180,228 +180,327 @@ window.FactoryScene = function (host, kind, ui) {
     }
   }
 
-  /* ---------------- 使いどころごとの景色と台本 ---------------- */
-  var view = { target: V3(0.6, 0.6, -1), az: 0.28, el: 0.6, pts: [] };
-  var sim = { tick: function () {} };
-  var count = 0;
+  /* ---------------- 1つの工場の床に、5つの作業場所を並べる ---------------- */
+  // どの作業場所も、正面（通路側）を z = -0.35 にそろえる。LexxMoMa は z = 0.1 の通路を x 方向に走る
+  var clock = 0;
+  bot.z = 0.1;
+  floor(-17, 16, -4.9, 2);
+  zone(-17, 16, -0.25, 0.45, '#5AA0DC', 0.14);           // LexxMoMa の通路
+  tape(-17, 16, -0.25); tape(-17, 16, 0.45);
+  [[-9, 'C11'], [-3, 'C12'], [3, 'C13'], [9, 'C14']].forEach(function (p) { pillar(p[0], -3.3, p[1]); });
+  function cart(x, z) {                   // 2段の台車（上段の高さ 0.78）
+    var g = new THREE.Group(); g.position.set(x, 0, z == null ? -0.75 : z); scene.add(g);
+    box(g, 0.9, 0.03, 0.6, '#8b98a4', 0, 0.78, 0); box(g, 0.9, 0.03, 0.6, '#8b98a4', 0, 0.3, 0);
+    [-1, 1].forEach(function (sx) { [-1, 1].forEach(function (sz) { box(g, 0.03, 0.8, 0.03, '#8b98a4', sx * 0.43, 0.4, sz * 0.28); }); });
+    return shade(g);
+  }
+  function row(x, z, y, make, n) {        // 台の上に部品を横一列に並べる（取ると補充される）
+    var list = [];
+    for (var k = 0; k < n; k++) { var o = make(); scene.add(o); list.push(o); }
+    list.reset = function () { list.forEach(function (o, k) { o.position.set(x + (k - (n - 1) / 2) * 0.28, y, z); }); };
+    list.take = function () { var o = list.shift(); var q = make(); scene.add(q); list.push(q); list.reset(); return o; };
+    list.reset();
+    return list;
+  }
+  var RAW = '#5b6670', DONE = '#a9bfd0';
+  var doneMat = function () { return mat(DONE, { metalness: 0.5, roughness: 0.35 }); };
+  box(R.g, 0.36, 0.02, 0.5, '#9aa5ae', -0.22, 0.905, 0.0);        // 台車の上の置き台
+  var DECK = { raw: V3(-0.22, 0.965, 0.13), done: V3(-0.22, 0.965, -0.13) };
+  var deckW = function (k) { return R.g.localToWorld(DECK[k].clone()); };
+  var onDeck = {};
+  var stations = [];
 
-  if (kind === 'supply') {
-    /* A：ライン脇の棚（シューター）へ部品箱を補充し、空箱を回収する */
-    floor(-7, 9, -4.6, 3);
-    zone(-7, 9, -1.95, -0.6, C.green, 0.12);              // 作業者の域
-    zone(-7, 9, 0.62, 1.55, '#5AA0DC', 0.14);             // LexxMoMa の通路
-    tape(-7, 9, -1.95); tape(-7, 9, 0.62); tape(-7, 9, 1.55);
-    box(scene, 16, 0.25, 2.1, '#cfd6dc', 1, 0.125, -2.95); // コンベヤ
-    for (var k = 0; k < 16; k++) box(scene, 0.04, 0.02, 2.1, '#b8c2ca', -7 + k + 0.5, 0.26, -2.95);
-    var cars = [-4.5, 1.2, 6.9].map(function (x) { var c = car('#f4f5f6'); c.position.set(x, 0.25, -2.95); scene.add(c); return c; });
-    var lamps = andon(1, -2.95, 4.2);
-    pillar(-6.3, -1.3, 'C11'); pillar(8.3, -1.3, 'C12');
-    var SX = [-2.6, 0, 2.6], SUP = 0.86, RET = 1.38;
-    var racks = SX.map(function (x, i) {
-      var g = new THREE.Group(); g.position.set(x, 0, 0); scene.add(g);
-      pipeRack(g, 0.86, 1.1, 1.62);
-      [[SUP - 0.03, -0.04], [RET - 0.03, 0.04]].forEach(function (lv) {   // ローラー段（ライン側へ／通路側へ少し傾く）
-        var p = box(g, 0.8, 0.02, 1.1, '#c5cdd3', 0, lv[0], 0); p.rotation.x = lv[1];
-      });
-      box(g, 0.86, 0.5, 0.01, '#eef2f5', 0, 0.3, -0.55);    // ライン側の下の閉じ板
-      shade(g);
-      var r = { x: x, sup: [], ret: [], w: worker(x, -1.15, 0), timer: 3 + i * 4.5, anim: null };
-      for (var n = 0; n < 2; n++) { var c = crate(C.full); scene.add(c); r.sup.push(c); c.position.set(x, SUP + 0.075, -0.33 + n * 0.36); }
-      return r;
-    });
-    var supplyRack = new THREE.Group(); supplyRack.position.set(5.0, 0, 0); scene.add(supplyRack);
-    pipeRack(supplyRack, 0.86, 0.9, 1.2); box(supplyRack, 0.8, 0.02, 0.9, '#c5cdd3', 0, SUP - 0.03, 0); shade(supplyRack);
-    var stock = crate(C.full); scene.add(stock); stock.position.set(5.0, SUP + 0.075, 0.1);
-    var emptyCart = new THREE.Group(); emptyCart.position.set(6.3, 0, 0.3); scene.add(emptyCart);
-    box(emptyCart, 0.8, 0.03, 0.7, '#8b98a4', 0, 0.42, 0); [-1, 1].forEach(function (s) { box(emptyCart, 0.03, 0.42, 0.03, '#8b98a4', s * 0.38, 0.21, 0.32); box(emptyCart, 0.03, 0.42, 0.03, '#8b98a4', s * 0.38, 0.21, -0.32); }); shade(emptyCart);
-    var dropped = [];
-    var laneZ = function (lane, i) { return lane === 'sup' ? -0.33 + i * 0.36 : 0.33 - i * 0.36; };
-    bot.x = 5.6; bot.z = 1.0;
-    var trip = 0, delivered = 0;
-    script = function () {
-      var r = racks[trip % 3]; trip++;
-      ui.cap('置き場で部品箱を取る');
-      pick(function () { return stock; }, function () { return stock.position.clone(); },
-        function () { stock = crate(C.full); scene.add(stock); stock.position.set(5.0, SUP + 0.075, 0.1); stock.visible = false; });
-      call(function () { stock.visible = true; });
-      drive(r.x, 'ライン脇の棚へ');
-      until(function () { return r.sup.length < 3; });
-      call(function () { ui.cap('棚の奥から箱を入れる'); });
-      place(function () { return V3(r.x, SUP + 0.075, 0.42); }, function (o) { r.sup.push(o); delivered++; ui.count('補充 ' + delivered + '箱'); });
-      call(function () {                  // 返却段に空箱が来ていれば回収してから戻る
-        var e = r.ret[0], ready = e && Math.abs(e.position.z - laneZ('ret', 0)) < 0.02;
-        if (ready) {
-          ui.cap('空箱を回収する');
-          pick(function () { return r.ret[0]; }, function () { return r.ret[0].position.clone(); }, function () { r.ret.shift(); });
-          drive(5.6, '空箱を戻す');
-          place(function () { return V3(6.3, 0.52, 0.3 + (dropped.length % 2 ? 0.15 : -0.15)); }, function (o) {
+  /* 1. 生産ライン横の部品供給：ライン脇の棚へ箱を入れ、空箱を回収する */
+  (function () {
+    var X = -12, SUP = 0.86, RET = 1.38, RZ = -0.9;
+    zone(-17, -7, -2.85, -1.5, C.green, 0.12); tape(-17, -7, -2.85); tape(-17, -7, -1.5);
+    box(scene, 10.5, 0.25, 2.1, '#cfd6dc', -12, 0.125, -3.9);
+    for (var k = 0; k < 10; k++) box(scene, 0.04, 0.02, 2.1, '#b8c2ca', -16.7 + k, 0.26, -3.9);
+    var cars = [-15, -9.6].map(function (x) { var c = car('#f4f5f6'); c.position.set(x, 0.25, -3.9); scene.add(c); return c; });
+    var lamps = andon(-12, -3.9, 3.6);
+    var g = new THREE.Group(); g.position.set(X, 0, RZ); scene.add(g);
+    pipeRack(g, 0.86, 1.1, 1.62);
+    [[SUP - 0.03, -0.04], [RET - 0.03, 0.04]].forEach(function (lv) { var p = box(g, 0.8, 0.02, 1.1, '#c5cdd3', 0, lv[0], 0); p.rotation.x = lv[1]; });
+    box(g, 0.86, 0.5, 0.01, '#eef2f5', 0, 0.3, -0.55);
+    shade(g);
+    var w = worker(X, -2.05, 0);
+    var laneZ = function (lane, i) { return lane === 'sup' ? RZ - 0.33 + i * 0.36 : RZ + 0.33 - i * 0.36; };
+    var sup = [], ret = [], anim = null, timer = 4;
+    for (var n = 0; n < 2; n++) { var c = crate(C.full); scene.add(c); sup.push(c); c.position.set(X, SUP + 0.075, laneZ('sup', n)); }
+    var st = new THREE.Group(); st.position.set(X - 1.6, 0, -0.85); scene.add(st);
+    pipeRack(st, 0.86, 0.9, 1.2); box(st, 0.8, 0.02, 0.9, '#c5cdd3', 0, SUP - 0.03, 0); shade(st);
+    var stockAt = V3(X - 1.6, SUP + 0.075, -0.65);
+    var stock = crate(C.full); scene.add(stock); stock.position.copy(stockAt);
+    cart(X + 1.6); var dropped = [];
+    stations.push({
+      x: X, name: '生産ライン横の部品供給',
+      run: function () {
+        drive(X - 1.6);
+        pick(function () { return stock; }, function () { return stockAt.clone(); },
+          function () { stock = crate(C.full); scene.add(stock); stock.position.copy(stockAt); });
+        drive(X);
+        until(function () { return sup.length < 3; });
+        place(function () { return V3(X, SUP + 0.075, RZ + 0.39); }, function (o) { sup.push(o); });
+        call(function () {                // 返却段に空箱が来ていれば回収する
+          var e = ret[0];
+          if (!e || Math.abs(e.position.z - laneZ('ret', 0)) > 0.02) return;
+          pick(function () { return ret[0]; }, function () { return ret[0].position.clone(); }, function () { ret.shift(); });
+          drive(X + 1.6);
+          place(function () { return V3(X + 1.6 + (dropped.length % 2 ? 0.2 : -0.2), 0.87, -0.75); }, function (o) {
             dropped.push(o); if (dropped.length > 2) scene.remove(dropped.shift());
           });
-        } else drive(5.6, '置き場へ戻る');
-      });
-    };
-    sim.tick = function (dt) {
-      cars.forEach(function (c) { c.position.x += dt * 0.22; if (c.position.x > 9.5) c.position.x -= 17.1; });
-      racks.forEach(function (r) {
-        r.sup.forEach(function (c, i) { var z = laneZ('sup', i); c.position.z += clamp(z - c.position.z, -dt * 0.6, dt * 0.6); });
-        r.ret.forEach(function (c, i) { var z = laneZ('ret', i); c.position.z += clamp(z - c.position.z, -dt * 0.6, dt * 0.6); });
-        // 作業者：先頭の箱の部品を使い切ったら、空箱を上の返却段へ
-        if (r.anim) {
-          r.anim.t += dt; var p = Math.min(1, r.anim.t / 1.4);
-          r.w.reach(Math.sin(p * Math.PI));
-          r.anim.c.position.lerpVectors(r.anim.a, r.anim.b, ease(p));
-          if (p >= 1) { r.ret.push(r.anim.c); r.anim = null; r.timer = 9 + Math.random() * 4; }
-        } else if ((r.timer -= dt) <= 0 && r.sup.length && Math.abs(r.sup[0].position.z - laneZ('sup', 0)) < 0.02 && r.ret.length < 2) {
-          var c = r.sup.shift(); c.userData.setColor(C.empty);
-          r.anim = { t: 0, c: c, a: c.position.clone(), b: V3(r.x, RET + 0.075, -0.33) };
-        } else r.w.reach(0);
-      });
-      lamps.forEach(function (m, i) { var on = (i + Math.floor(clock / 2)) % 8 === 0; m.emissiveIntensity = on ? 1 : 0.5; });
-    };
-    view = { target: V3(1.3, 0.7, -0.9), az: 0.3, el: 0.62, pts: [] };
-    [-3.3, 6.7].forEach(function (x) { [-3.0, 1.45].forEach(function (z) { [0, 1.8].forEach(function (y) { view.pts.push(V3(x, y, z)); }); }); });
-    ui.count('補充 0箱');
-  }
-
-  if (kind === 'machine') {
-    /* B：加工機・検査機へ材料を入れ、終わったものを取り出す */
-    floor(-7, 7, -2.8, 2.6);
-    zone(-7, 7, -0.25, 0.95, '#5AA0DC', 0.14);
-    tape(-7, 7, -0.25); tape(-7, 7, 0.95);
-    pillar(-6.2, -1.6, 'D04'); pillar(6.2, -1.6, 'D05');
-    var MX = [-2.4, 0, 2.4], TABLE = 0.86;
-    var machines = MX.map(function (x, i) {
-      var g = new THREE.Group(); g.position.set(x, 0, -1.0); scene.add(g);
-      var body = mat('#e3e8ec'), trim = mat('#0b4f8f');
-      box(g, 1.7, 0.75, 1.3, body, 0, 0.375, 0);                 // 下
-      box(g, 1.7, 0.55, 1.3, body, 0, 1.775, 0);                 // 上
-      box(g, 0.45, 0.7, 1.3, body, -0.625, 1.15, 0);              // 左右の柱
-      box(g, 0.45, 0.7, 1.3, body, 0.625, 1.15, 0);
-      box(g, 1.72, 0.08, 1.32, trim, 0, 2.0, 0);
-      box(g, 0.8, 0.02, 0.6, '#9aa5ae', 0, TABLE - 0.01, 0.2);    // 中の台
-      box(g, 0.28, 0.4, 0.06, '#2b3135', 0.62, 1.25, 0.66);       // 操作盤
-      var door = box(g, 0.82, 0.7, 0.03, new THREE.MeshStandardMaterial({ color: '#9fc3e0', transparent: true, opacity: 0.55 }), 0, 1.15, 0.64);
-      var lamp = [['#e0302a', 2.42], ['#f2c230', 2.3], ['#3EB370', 2.18]].map(function (l) {
-        var m = new THREE.MeshStandardMaterial({ color: l[0], emissive: l[0], emissiveIntensity: 0.05 });
-        var c = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.11, 16), m); c.position.set(0.7, l[1], 0.45); g.add(c); return m;
-      });
-      cyl(g, 0.015, 0.12, '#8b98a4', 0.7, 2.06, 0.45, 'y');
-      shade(g);
-      var p = part('#a9bfd0'); scene.add(p); p.position.set(x, TABLE + 0.05, -0.8);
-      return { x: x, door: door, lamp: lamp, part: p, doneAt: [0, 7, 13][i], open: 0 };
-    });
-    function cart(x, color) {
-      var g = new THREE.Group(); g.position.set(x, 0, -0.75); scene.add(g);
-      box(g, 0.9, 0.03, 0.6, '#8b98a4', 0, 0.78, 0); box(g, 0.9, 0.03, 0.6, '#8b98a4', 0, 0.3, 0);
-      [-1, 1].forEach(function (sx) { [-1, 1].forEach(function (sz) { box(g, 0.03, 0.8, 0.03, '#8b98a4', sx * 0.43, 0.4, sz * 0.28); }); });
-      return shade(g);
-    }
-    cart(-4.7); cart(4.7);
-    var inParts = [], outParts = [];
-    for (var n = 0; n < 3; n++) { var q = part('#5b6670'); scene.add(q); q.position.set(-4.7 + (n - 1) * 0.28, 0.85, -0.75); inParts.push(q); }
-    box(R.g, 0.36, 0.02, 0.5, '#9aa5ae', -0.22, 0.905, 0.0);       // 台車の上の置き台
-    var DECK = { raw: V3(-0.22, 0.965, 0.13), done: V3(-0.22, 0.965, -0.13) };
-    var deckW = function (k) { return R.g.localToWorld(DECK[k].clone()); };
-    bot.x = -4.7; bot.z = 0.1;
-    var served = 0, made = 0, onDeck = {};
-    script = function () {
-      var m = machines.slice().sort(function (a, b) { return a.doneAt - b.doneAt; })[0];
-      drive(-4.7, '材料を取る');
-      pick(function () { return inParts[0]; }, function () { return inParts[0].position.clone(); }, function () {
-        var used = inParts.shift();
-        var q = part('#5b6670'); scene.add(q); inParts.push(q);
-        inParts.forEach(function (o, i) { o.position.set(-4.7 + (i - 1) * 0.28, 0.85, -0.75); });
-        onDeck.raw = used;
-      });
-      place(function () { return deckW('raw'); }, null, true);
-      drive(m.x, '終わる設備へ向かう');
-      until(function () { return clock >= m.doneAt; }, '加工の終わりを待つ');
-      act({ dur: 0.7, start: function () { ui.cap('扉を開けて、加工済みを取り出す'); }, update: function (p) { m.open = p; } });
-      pick(function () { return m.part; }, function () { return m.part.position.clone(); });
-      place(function () { return deckW('done'); }, function (o) { onDeck.done = o; }, true);
-      call(function () { ui.cap('材料を入れる'); });
-      pick(function () { return onDeck.raw; }, function () { return deckW('raw'); });
-      place(function () { return V3(m.x, TABLE + 0.05, -0.8); }, function (o) { m.part = o; });
-      act({ dur: 0.7, update: function (p) { m.open = 1 - p; }, start: function () {} });
-      call(function () { m.doneAt = clock + 26; served++; ui.count('入れ替え ' + served + '回'); m.part.userData.goldAt = m.doneAt; });
-      drive(4.7, '加工済みを置き場へ');
-      pick(function () { return onDeck.done; }, function () { return deckW('done'); });
-      place(function () { return V3(4.7 + ((made % 3) - 1) * 0.28, 0.85, -0.75); }, function (o) {
-        outParts.push(o); made++; if (outParts.length > 3) scene.remove(outParts.shift());
-      });
-    };
-    sim.tick = function () {
-      machines.forEach(function (m) {
-        m.door.position.y = 1.15 + m.open * 0.62;
-        var run = clock < m.doneAt;
-        m.lamp[2].emissiveIntensity = run ? 1 : 0.05;     // 緑：加工中
-        m.lamp[1].emissiveIntensity = run ? 0.05 : (Math.floor(clock * 2) % 2 ? 1 : 0.3);   // 黄色の点滅：終わった
-        if (!run && m.part.userData.goldAt) { m.part.children[0].material = mat('#a9bfd0', { metalness: 0.5, roughness: 0.35 }); m.part.userData.goldAt = 0; }
-      });
-    };
-    view = { target: V3(0, 0.8, -0.6), az: 0.22, el: 0.5, pts: [] };
-    [-5.4, 5.4].forEach(function (x) { [-1.8, 1.2].forEach(function (z) { [0, 2.5].forEach(function (y) { view.pts.push(V3(x, y, z)); }); }); });
-    ui.count('入れ替え 0回');
-  }
-
-  if (kind === 'kit') {
-    /* C：人のいない時間に、倉庫の棚から翌日分の部品箱を台車にそろえる */
-    scene.background = new THREE.Color('#dde4ea');
-    floor(-6, 7.5, -2.4, 2.4);
-    zone(-6, 7.5, -0.5, 0.55, '#5AA0DC', 0.14);
-    tape(-6, 7.5, -0.5); tape(-6, 7.5, 0.55);
-    pillar(-5.5, -1.7, 'F02');
-    var LV = [0.32, 0.82, 1.32], colors = ['#2f6fb3', '#3C9A5F', '#E58F26', '#3570B0', '#22558C'];
-    var slots = [];
-    [-3.4, -1.0].forEach(function (rx) {          // 倉庫の棚（青い柱・橙の梁）
-      var g = new THREE.Group(); g.position.set(rx, 0, -0.95); scene.add(g);
-      [-1.1, 1.1].forEach(function (dx) { [-0.28, 0.28].forEach(function (dz) { box(g, 0.07, 1.75, 0.07, '#2c5d9e', dx, 0.875, dz); }); });
-      LV.forEach(function (y) { [-0.28, 0.28].forEach(function (dz) { box(g, 2.27, 0.07, 0.05, '#e5832d', 0, y - 0.04, dz); }); box(g, 2.2, 0.015, 0.56, '#c9d0d6', 0, y - 0.005, 0); });
-      shade(g);
-      LV.forEach(function (y, li) { [-0.75, -0.25, 0.25, 0.75].forEach(function (dx, si) {
-        var c = crate(colors[(li * 4 + si + (rx > -2 ? 2 : 0)) % colors.length]); scene.add(c);
-        c.position.set(rx + dx, y + 0.075, -0.85); slots.push({ c: c, home: c.position.clone() });
-      }); });
-    });
-    var KX = 4.6, kitSlots = [];
-    [0.45, 0.95].forEach(function (y) { [-0.36, 0, 0.36].forEach(function (dx) { kitSlots.push(V3(dx, y + 0.09, 0)); }); });
-    function kitCart() {
-      var g = new THREE.Group(); scene.add(g);
-      [0.45, 0.95].forEach(function (y) { box(g, 1.15, 0.03, 0.6, '#8b98a4', 0, y, 0); });
-      [-1, 1].forEach(function (sx) { [-1, 1].forEach(function (sz) { box(g, 0.03, 1.15, 0.03, '#8b98a4', sx * 0.56, 0.575, sz * 0.28); cyl(g, 0.05, 0.04, '#2b3135', sx * 0.5, 0.05, sz * 0.24, 'z'); }); });
-      box(g, 0.03, 0.03, 0.6, '#8b98a4', 0.6, 1.0, 0);
-      return shade(g);
-    }
-    var kc = kitCart(); kc.position.set(KX, 0, -0.95);
-    var filled = [], done = 0, order = [];
-    bot.x = KX - 1.2; bot.z = 0.0;
-    script = function () {
-      if (!order.length) order = slots.map(function (s, i) { return i; }).sort(function () { return Math.random() - 0.5; }).slice(0, 6);
-      var s = slots[order.shift()];
-      var k = filled.length;
-      drive(s.home.x, '棚から部品箱を取る');
-      pick(function () { return s.c; }, function () { return s.c.position.clone(); });
-      drive(KX, '台車にそろえる');
-      place(function () { return kc.localToWorld(kitSlots[k].clone()); }, function (o) {
-        filled.push({ o: o, s: s }); done++; ui.count('夜間・そろえた箱 ' + done);
-        var n = crate(o.userData.body.material.color.getStyle()); scene.add(n); n.position.copy(s.home); n.visible = false; s.c = n;
-      });
-      if (k === kitSlots.length - 1) {
-        act({ dur: 2.4, start: function () { ui.cap('台車がいっぱい → 次の台車へ'); this.items = filled; filled = []; },
-              update: function (p) { var dx = ease(p) * 3; kc.position.x = KX + dx; this.items.forEach(function (f, i) { f.o.position.copy(kc.localToWorld(kitSlots[i].clone())); }); } });
-        call(function () {
-          scene.remove(kc); kc = kitCart(); kc.position.set(KX, 0, -0.95);
-          slots.forEach(function (sl) { sl.c.visible = true; });
-          scene.children.filter(function (o) { return o.userData && o.userData.size && o.position.x > KX + 2; }).forEach(function (o) { scene.remove(o); });
         });
-      }
+      },
+      tick: function (dt) {
+        cars.forEach(function (c) { c.position.x += dt * 0.22; if (c.position.x > -6.8) c.position.x -= 10.9; });
+        sup.forEach(function (c, i) { c.position.z += clamp(laneZ('sup', i) - c.position.z, -dt * 0.6, dt * 0.6); });
+        ret.forEach(function (c, i) { c.position.z += clamp(laneZ('ret', i) - c.position.z, -dt * 0.6, dt * 0.6); });
+        if (anim) {                        // 作業者：先頭の箱を使い切ったら、空箱を上の返却段へ
+          anim.t += dt; var p = Math.min(1, anim.t / 1.4);
+          w.reach(Math.sin(p * Math.PI)); anim.c.position.lerpVectors(anim.a, anim.b, ease(p));
+          if (p >= 1) { ret.push(anim.c); anim = null; timer = 7 + Math.random() * 3; }
+        } else if ((timer -= dt) <= 0 && sup.length > 1 && Math.abs(sup[0].position.z - laneZ('sup', 0)) < 0.02 && ret.length < 2) {
+          var c = sup.shift(); c.userData.setColor(C.empty);
+          anim = { t: 0, c: c, a: c.position.clone(), b: V3(X, RET + 0.075, laneZ('ret', 1)) };
+        } else w.reach(0);
+        lamps.forEach(function (m, i) { m.emissiveIntensity = (i + Math.floor(clock / 2)) % 8 === 0 ? 1 : 0.5; });
+      },
+      reset: function () {}
+    });
+  })();
+
+  /* 2. 研削・切削設備への部品の着脱：扉を開けて加工済みを取り出し、次を入れる */
+  (function () {
+    var X = -6, TABLE = 0.86;
+    var g = new THREE.Group(); g.position.set(X, 0, -1.0); scene.add(g);
+    var body = mat('#e3e8ec'), trim = mat('#0b4f8f');
+    box(g, 1.7, 0.75, 1.3, body, 0, 0.375, 0); box(g, 1.7, 0.55, 1.3, body, 0, 1.775, 0);
+    box(g, 0.45, 0.7, 1.3, body, -0.625, 1.15, 0); box(g, 0.45, 0.7, 1.3, body, 0.625, 1.15, 0);
+    box(g, 1.72, 0.08, 1.32, trim, 0, 2.0, 0);
+    box(g, 0.8, 0.02, 0.6, '#9aa5ae', 0, TABLE - 0.01, 0.2);
+    box(g, 0.28, 0.4, 0.06, '#2b3135', 0.62, 1.25, 0.66);
+    var door = box(g, 0.82, 0.7, 0.03, new THREE.MeshStandardMaterial({ color: '#9fc3e0', transparent: true, opacity: 0.55 }), 0, 1.15, 0.64);
+    var lamp = [['#e0302a', 2.42], ['#f2c230', 2.3], ['#3EB370', 2.18]].map(function (l) {
+      var m = new THREE.MeshStandardMaterial({ color: l[0], emissive: l[0], emissiveIntensity: 0.05 });
+      var c = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.11, 16), m); c.position.set(0.7, l[1], 0.45); g.add(c); return m;
+    });
+    cyl(g, 0.015, 0.12, '#8b98a4', 0.7, 2.06, 0.45, 'y');
+    shade(g);
+    var IN = V3(X, TABLE + 0.05, -0.8);
+    var m = { open: 0, doneAt: 0, part: part(DONE) }; scene.add(m.part); m.part.position.copy(IN);
+    cart(X - 1.6); cart(X + 1.6);
+    var raw = row(X - 1.6, -0.75, 0.85, function () { return part(RAW); }, 3), out = [];
+    stations.push({
+      x: X, name: '研削・切削設備への部品の着脱',
+      run: function () {
+        drive(X - 1.6);
+        pick(function () { return raw[0]; }, function () { return raw[0].position.clone(); }, function () { onDeck.raw = raw.take(); });
+        place(function () { return deckW('raw'); }, null, true);
+        drive(X);
+        until(function () { return clock >= m.doneAt; });
+        act({ dur: 0.7, update: function (p) { m.open = p; } });
+        pick(function () { return m.part; }, function () { return IN.clone(); });
+        place(function () { return deckW('done'); }, function (o) { onDeck.done = o; }, true);
+        pick(function () { return onDeck.raw; }, function () { return deckW('raw'); });
+        place(function () { return IN.clone(); }, function (o) { m.part = o; });
+        act({ dur: 0.7, update: function (p) { m.open = 1 - p; } });
+        call(function () { m.doneAt = clock + 18; m.part.userData.finishAt = m.doneAt; });
+        drive(X + 1.6);
+        pick(function () { return onDeck.done; }, function () { return deckW('done'); });
+        place(function () { return V3(X + 1.6 + ((out.length % 3) - 1) * 0.28, 0.85, -0.75); }, function (o) {
+          out.push(o); if (out.length > 3) scene.remove(out.shift());
+        });
+      },
+      tick: function () {
+        door.position.y = 1.15 + m.open * 0.62;
+        var run = clock < m.doneAt;
+        lamp[2].emissiveIntensity = run ? 1 : 0.05;
+        lamp[1].emissiveIntensity = run ? 0.05 : (Math.floor(clock * 2) % 2 ? 1 : 0.3);
+        if (!run && m.part.userData.finishAt) { m.part.children[0].material = doneMat(); m.part.userData.finishAt = 0; }
+      },
+      reset: function () { m.open = 0; }
+    });
+  })();
+
+  /* 3. 板金部品の溶接工程への部品設置：治具に置くと、溶接ロボットが溶接する */
+  (function () {
+    var X = 0, JZ = -0.85;
+    var fence = new THREE.MeshStandardMaterial({ color: '#c9d0d6', transparent: true, opacity: 0.35, side: THREE.DoubleSide });
+    var post = mat('#f2c230');
+    [[-1.6, -0.5], [-1.6, -2.9], [1.6, -2.9], [1.6, -0.5]].forEach(function (p) { box(scene, 0.06, 1.8, 0.06, post, X + p[0], 0.9, p[1]); });
+    [[-1.6, -1.7, 2.4, 'z'], [1.6, -1.7, 2.4, 'z'], [0, -2.9, 3.2, 'x']].forEach(function (p) {
+      var w = p[3] === 'x' ? p[2] : 0.02, d = p[3] === 'z' ? p[2] : 0.02;
+      box(scene, w, 1.5, d, fence, X + p[0], 0.95, p[1]);
+      box(scene, p[3] === 'x' ? p[2] : 0.04, 0.04, p[3] === 'z' ? p[2] : 0.04, post, X + p[0], 1.72, p[1]);
+    });
+    [-1, 1].forEach(function (s) {                                       // 入口の光の柵
+      box(scene, 0.07, 1.4, 0.07, '#2b3135', X + s * 0.8, 0.7, -0.45);
+      box(scene, 0.03, 1.2, 0.02, new THREE.MeshStandardMaterial({ color: '#f2c230', emissive: '#f2c230', emissiveIntensity: 0.5 }), X + s * 0.8, 0.75, -0.41);
+    });
+    var tbl = new THREE.Group(); tbl.position.set(X, 0, JZ); scene.add(tbl);
+    box(tbl, 0.9, 0.8, 0.6, '#5b6670', 0, 0.4, 0);
+    [-0.25, 0.25].forEach(function (dx) { box(tbl, 0.05, 0.08, 0.05, '#e5832d', dx, 0.84, -0.18); box(tbl, 0.05, 0.08, 0.05, '#e5832d', dx, 0.84, 0.18); });
+    shade(tbl);
+    shade(box(scene, 0.45, 0.5, 0.45, '#5b6670', X, 0.25, -2.05));
+    var wr = new THREE.Group(); scene.add(wr);
+    var warm = M.makeArm(wr, { body: '#f08a24', ring: '#3a4148', tool: '#3a4148', L1: 0.75, L2: 0.75 }, V3(X, 0.5, -2.05)); shade(wr);
+    var wHome = V3(X, 1.55, -1.75);
+    var spark = new THREE.PointLight('#bfe2ff', 0, 3); scene.add(spark);
+    var sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(60), 3));
+    var sparks = new THREE.Points(sg, new THREE.PointsMaterial({ color: '#ffd27a', size: 0.04 })); sparks.visible = false; scene.add(sparks);
+    var plate = function () {
+      var p = new THREE.Group(); box(p, 0.42, 0.04, 0.3, '#b9c2c9', 0, 0, 0, { metalness: 0.6, roughness: 0.35 });
+      p.userData = { size: { x: 0.42, y: 0.04, z: 0.3 } }; return shade(p);
     };
-    view = { target: V3(0.6, 0.6, -0.6), az: 0.25, el: 0.55, pts: [] };
-    [-4.7, 5.4].forEach(function (x) { [-1.4, 0.9].forEach(function (z) { [0, 1.9].forEach(function (y) { view.pts.push(V3(x, y, z)); }); }); });
-    ui.count('夜間・そろえた箱 0');
+    cart(X + 1.9); cart(X - 1.9);
+    var plates = row(X + 1.9, -0.75, 0.82, plate, 2), out = [], onJig = null;
+    var weld = { t: -1 };                  // t：溶接を始めてからの秒数（-1 は止まっている）
+    warm.ik(wHome, true);
+    stations.push({
+      x: X, name: '板金部品の溶接工程への部品設置',
+      run: function () {
+        drive(X + 1.9);
+        pick(function () { return plates[0]; }, function () { return plates[0].position.clone(); }, function () { plates.take(); });
+        drive(X);
+        place(function () { return V3(X, 0.88, JZ); }, function (o) { onJig = o; });
+        call(function () { weld.t = 0; });
+        until(function () { return weld.t < 0; });
+        pick(function () { return onJig; }, function () { return V3(X, 0.88, JZ); });
+        drive(X - 1.9);
+        place(function () { return V3(X - 1.9 + ((out.length % 2) ? 0.2 : -0.2), 0.82, -0.75); }, function (o) {
+          out.push(o); if (out.length > 2) scene.remove(out.shift());
+        });
+      },
+      tick: function (dt) {
+        if (weld.t < 0) { warm.ik(wHome, true); spark.intensity = 0; sparks.visible = false; return; }
+        weld.t += dt;
+        var T = weld.t, on = T > 1.2 && T < 4.2, s = T < 1.2 ? T / 1.2 : T < 4.2 ? 1 : 1 - (T - 4.2) / 1.2;
+        var seam = V3(X - 0.16 + 0.32 * clamp((T - 1.2) / 3, 0, 1), 0.92, JZ);
+        warm.ik(wHome.clone().lerp(seam.clone().add(V3(0, 0.05, -0.2)), ease(s)), true);
+        spark.intensity = on ? 0.8 + Math.random() * 1.4 : 0; spark.position.copy(seam).add(V3(0, 0.1, 0));
+        sparks.visible = on;
+        if (on) {
+          var a = sg.attributes.position.array;
+          for (var k = 0; k < 20; k++) { a[k * 3] = seam.x + (Math.random() - 0.5) * 0.25; a[k * 3 + 1] = seam.y + Math.random() * 0.2; a[k * 3 + 2] = seam.z + (Math.random() - 0.5) * 0.25; }
+          sg.attributes.position.needsUpdate = true;
+          if (onJig && !onJig.userData.seam) onJig.userData.seam = box(onJig, 0.32, 0.012, 0.02, '#4a3a2a', 0, 0.026, 0);   // 溶接した跡
+        }
+        if (T > 5.4) weld.t = -1;
+      },
+      reset: function () { weld.t = -1; }
+    });
+  })();
+
+  /* 4. 検査機への部品投入と検査記録：トレイに置くと中で検査し、画面に結果と記録の数が出る */
+  (function () {
+    var X = 6, TRAY_OUT = -0.5, TRAY_IN = -1.05;
+    var g = new THREE.Group(); g.position.set(X, 0, -1.05); scene.add(g);
+    var body = mat('#eef1f3'), trim = mat('#0b4f8f');
+    box(g, 1.3, 0.8, 1.0, body, 0, 0.4, 0);
+    box(g, 1.3, 0.55, 1.0, body, 0, 1.825, 0);
+    [-0.6, 0.6].forEach(function (dx) { box(g, 0.1, 0.75, 1.0, body, dx, 1.175, 0); });
+    box(g, 1.32, 0.06, 1.02, trim, 0, 2.12, 0);
+    box(g, 0.2, 0.1, 0.2, '#1d2226', 0, 1.5, 0);
+    var ringM = new THREE.MeshStandardMaterial({ color: '#5AA0DC', emissive: '#5AA0DC', emissiveIntensity: 0.2 });
+    var ring = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.015, 8, 24), ringM); ring.rotation.x = Math.PI / 2; ring.position.set(0, 1.44, 0); g.add(ring);
+    shade(g);
+    var tray = box(scene, 0.5, 0.02, 0.4, '#9aa5ae', X, 0.82, TRAY_OUT); shade(tray);
+    var cv = document.createElement('canvas'); cv.width = 256; cv.height = 128;
+    var tex = new THREE.CanvasTexture(cv);
+    var screen = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.31), new THREE.MeshBasicMaterial({ map: tex }));
+    screen.position.set(X, 1.83, -0.54); scene.add(screen);
+    var records = 0;
+    function draw(state) {
+      var x2 = cv.getContext('2d');
+      x2.fillStyle = '#10202e'; x2.fillRect(0, 0, 256, 128);
+      x2.textAlign = 'center'; x2.textBaseline = 'middle';
+      x2.fillStyle = state === 'ok' ? '#3EB370' : state === 'scan' ? '#5AA0DC' : '#8b98a4';
+      x2.font = '700 46px sans-serif'; x2.fillText(state === 'ok' ? 'OK' : state === 'scan' ? '検査中' : '待機', 128, 50);
+      x2.fillStyle = '#d5dee6'; x2.font = '700 24px sans-serif'; x2.fillText('記録 ' + records + ' 件', 128, 100);
+      tex.needsUpdate = true;
+    }
+    draw('idle');
+    cart(X - 1.6); cart(X + 1.6);
+    var parts = row(X - 1.6, -0.75, 0.85, function () { return part(DONE); }, 3), out = [], onTray = null;
+    var insp = { t: -1, drawn: 0 };
+    stations.push({
+      x: X, name: '検査機への部品投入と検査記録',
+      run: function () {
+        drive(X - 1.6);
+        pick(function () { return parts[0]; }, function () { return parts[0].position.clone(); }, function () { parts.take(); });
+        drive(X);
+        place(function () { return V3(X, 0.88, TRAY_OUT); }, function (o) { onTray = o; });
+        call(function () { insp.t = 0; });
+        until(function () { return insp.t < 0; });
+        pick(function () { return onTray; }, function () { return V3(X, 0.88, TRAY_OUT); });
+        drive(X + 1.6);
+        place(function () { return V3(X + 1.6 + ((out.length % 3) - 1) * 0.28, 0.85, -0.75); }, function (o) {
+          out.push(o); if (out.length > 3) scene.remove(out.shift());
+        });
+      },
+      tick: function (dt) {
+        ringM.emissiveIntensity = 0.2;
+        if (insp.t < 0) return;
+        var T = (insp.t += dt), z;
+        if (T < 0.9) z = TRAY_OUT + (TRAY_IN - TRAY_OUT) * ease(T / 0.9);
+        else if (T < 3.0) { z = TRAY_IN; ringM.emissiveIntensity = 0.6 + 0.6 * Math.sin(T * 12); if (!insp.drawn) { draw('scan'); insp.drawn = 1; } }
+        else if (T < 3.9) { if (insp.drawn === 1) { records++; draw('ok'); insp.drawn = 2; } z = TRAY_IN + (TRAY_OUT - TRAY_IN) * ease((T - 3.0) / 0.9); }
+        else { z = TRAY_OUT; insp.t = -1; insp.drawn = 0; }
+        tray.position.z = z; if (onTray) onTray.position.z = z;
+      },
+      reset: function () { insp.t = -1; insp.drawn = 0; tray.position.z = TRAY_OUT; }
+    });
+  })();
+
+  /* 5. 完成部品の箱詰め：台の上の完成品を、通い箱に並べて詰める */
+  (function () {
+    var X = 12, BZ = -0.85;
+    [X, X + 1.6].forEach(function (x) {
+      var t = new THREE.Group(); t.position.set(x, 0, BZ); scene.add(t);
+      box(t, 1.0, 0.04, 0.7, '#c9d0d6', 0, 0.78, 0);
+      [-1, 1].forEach(function (sx) { [-1, 1].forEach(function (sz) { box(t, 0.04, 0.78, 0.04, '#8b98a4', sx * 0.46, 0.39, sz * 0.31); }); });
+      shade(t);
+    });
+    var bin = null, k = 0, packed = [];
+    var SLOT = [[-0.15, -0.1], [0.15, -0.1], [-0.15, 0.1], [0.15, 0.1]];
+    function newBin() { bin = crate('#2f6fb3', { x: 0.66, y: 0.2, z: 0.46 }); bin.position.set(X, 0.9, BZ); scene.add(bin); k = 0; packed = []; }
+    newBin();
+    var parts = row(X + 1.6, BZ, 0.85, function () { return part(DONE); }, 3);
+    function one() {
+      drive(X + 1.6);
+      pick(function () { return parts[0]; }, function () { return parts[0].position.clone(); }, function () { parts.take(); });
+      drive(X);
+      place(function () { var s = SLOT[k]; return V3(X + s[0], 0.86, BZ + s[1]); }, function (o) { packed.push(o); k++; });
+      call(function () {
+        if (k < SLOT.length) return;
+        var full = bin, items = packed;           // 満杯になった箱は奥へ送り、空の箱を出す
+        act({ dur: 1.6, update: function (p) { var dz = -ease(p) * 1.2; full.position.z = BZ + dz; items.forEach(function (o, i) { o.position.z = BZ + SLOT[i][1] + dz; }); } });
+        call(function () { scene.remove(full); items.forEach(function (o) { scene.remove(o); }); newBin(); });
+      });
+    }
+    stations.push({ x: X, name: '完成部品の箱詰め', run: function () { one(); one(); }, tick: function () {}, reset: function () {} });
+  })();
+
+  /* 順番に回る（端まで行ったら折り返す） */
+  var order = [0, 1, 2, 3, 4, 3, 2, 1], at = 0, now = 0;
+  function visit(i) { now = i; ui.station(i); stations[i].run(); }
+  script = function () { visit(order[at % order.length]); at++; };
+  bot.x = stations[0].x - 1.6;
+  var sim = { tick: function (dt) { stations.forEach(function (s) { s.tick(dt); }); } };
+  // カメラはいまの作業場所を正面から。作業場所が変わると横へ流れる（pts は target からの相対位置）
+  var view = { target: V3(stations[0].x, 0.8, -1.1), az: 0.3, el: 0.55, pts: [] };
+  [-2.4, 2.4].forEach(function (x) { [-1.6, 1.6].forEach(function (z) { [-0.8, 1.3].forEach(function (y) { view.pts.push(V3(x, y, z)); }); }); });
+  function jump(i) {                      // ボタンで選んだ作業場所から始める
+    queue = []; cur = null;
+    if (bot.held) { scene.remove(bot.held); bot.held = null; }
+    R.g.children.filter(function (o) { return o.userData && o.userData.size; }).forEach(function (o) { R.g.remove(o); });
+    onDeck = {};
+    stations.forEach(function (s) { s.reset(); });
+    bot.wristL.copy(HOME); bot.open = 1;
+    bot.x = bot.lastX = stations[i].x + (stations[i].x > bot.x ? -2.5 : 2.5);
+    at = order.indexOf(i) + 1;
+    visit(i);
   }
-  if (bot.z == null) bot.z = 0;
-  bot.lastX = bot.x;
 
   /* ---------------- カメラ（ドラッグで回せる） ---------------- */
   var dist = 10;
@@ -409,10 +508,10 @@ window.FactoryScene = function (host, kind, ui) {
     var d = V3(Math.sin(view.az) * Math.cos(view.el), Math.sin(view.el), Math.cos(view.az) * Math.cos(view.el));
     camera.position.copy(view.target).addScaledVector(d, dist); camera.lookAt(view.target);
   }
-  function fit() {                        // 景色の要所がすべて入る、いちばん近い距離
+  function fit() {                        // 作業場所の要所がすべて入る、いちばん近い距離
     for (dist = 3; dist < 80; dist *= 1.03) {
       placeCam(); camera.updateMatrixWorld(true);
-      if (view.pts.every(function (p) { var q = p.clone().project(camera); return q.z < 1 && Math.abs(q.x) < 0.98 && Math.abs(q.y) < 0.92; })) break;
+      if (view.pts.every(function (p) { var q = p.clone().add(view.target).project(camera); return q.z < 1 && Math.abs(q.x) < 0.98 && q.y < 0.9 && q.y > -0.55; })) break;   // 下は作業名の帯の分あける
     }
   }
   function resize() {
@@ -428,16 +527,19 @@ window.FactoryScene = function (host, kind, ui) {
   window.addEventListener('pointerup', function () { drag = null; });
   if (window.ResizeObserver) new ResizeObserver(function () { resize(); render(); }).observe(host);
 
-  var clock = 0;
   function render() { renderer.render(scene, camera); }
   resize();
   poseBot(); render();
 
   return {
+    names: stations.map(function (s) { return s.name; }),
+    jump: jump,
     tick: function (dt) {
       dt = Math.min(dt, 0.1);
       clock += dt;
-      stepBot(dt); sim.tick(dt); poseBot(); render();
+      stepBot(dt); sim.tick(dt); poseBot();
+      view.target.x += (stations[now].x - view.target.x) * Math.min(1, dt * 2);   // 作業場所へ横に流れる
+      placeCam(); render();
     }
   };
 };

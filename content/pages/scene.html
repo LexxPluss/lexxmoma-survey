@@ -3,35 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>使いどころのシミュレーション</title>
+<title>工場内の使いどころ</title>
 <style>
-  :root { --main: #0068B7; --accent: #3EB370; --accent-d: #23864d; --text: #1f2933; --sub: #5f6b76; }
+  :root { --main: #0068B7; --main-pale: #e8f1f9; --text: #1f2933; --sub: #5f6b76; --line: #e2e7ec; }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: #fff; color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif; }
-  #stage { position: relative; height: 300px; overflow: hidden; background: #eef2f5; cursor: grab; }
+  #stage { position: relative; height: 320px; overflow: hidden; background: #eef2f5; cursor: grab; }
   #stage::before { content: '3D を読み込み中…'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; }
   #stage canvas { display: block; position: relative; }
-  .chip { position: absolute; z-index: 1; padding: 2px 10px; border-radius: 999px; font-size: 12px; line-height: 1.6; white-space: nowrap; }
-  #count { left: 8px; top: 8px; background: var(--accent-d); color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; }
-  #speed { right: 8px; top: 8px; background: rgba(255,255,255,.85); color: var(--sub); }
-  #cap { position: absolute; z-index: 1; left: 8px; right: 8px; bottom: 8px; padding: 5px 10px; border-radius: 6px; background: rgba(255,255,255,.94); border-left: 4px solid var(--main); font-size: 13px; font-weight: 700; }
-  @media (max-width: 420px) { #stage { height: 240px; } #cap { font-size: 12px; } }
+  #speed { position: absolute; z-index: 1; right: 8px; top: 8px; padding: 2px 10px; border-radius: 999px; background: rgba(255,255,255,.85); color: var(--sub); font-size: 12px; }
+  /* 作業名：写真の上の白い太字と暗い帯（資料と同じ見せ方） */
+  #name { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; padding: 10px 12px 12px; background: linear-gradient(transparent, rgba(16, 24, 32, .78) 40%); color: #fff; font-size: 18px; font-weight: 800; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  #list { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 2px 4px; }
+  #list button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text); cursor: pointer; }
+  #list button[aria-pressed="true"] { background: var(--main); border-color: var(--main); color: #fff; font-weight: 700; }
+  @media (max-width: 420px) { #stage { height: 250px; } #name { font-size: 15px; } #list button { font-size: 11px; } }
 </style>
 </head>
 <body>
-<div id="stage"><span class="chip" id="count"></span><span class="chip" id="speed"></span><div id="cap"></div></div>
+<div id="stage"><span id="speed"></span><div id="name"></div></div>
+<div id="list"></div>
 <script src="vendor/three.min.js?r128"></script>
 <script src="moma-model.js?v=1"></script>
-<script src="scene3d.js?v=3"></script>
+<script src="scene3d.js?v=7"></script>
 <script>
   var SPEED = 2;   // 再生の速さ（実時間の何倍で見せるか）
-  var KIND = (location.search.match(/[?&]scene=(\w+)/) || [])[1] || 'supply';
   var $ = function (id) { return document.getElementById(id); };
   $('speed').textContent = SPEED + '倍速';
-  var sim = window.FactoryScene ? FactoryScene($('stage'), KIND, {
-    cap: function (t) { $('cap').textContent = t; },
-    count: function (t) { $('count').textContent = t; }
-  }) : null;
+  var buttons = [];
+  // 作業場所が変わると呼ばれる（最初の呼び出しは最初の tick の中なので、ボタンはできている）
+  var sim = window.FactoryScene ? FactoryScene($('stage'), { station: function (i) { show(i); } }) : null;
+  function show(i) {
+    $('name').textContent = NAMES[i];
+    buttons.forEach(function (b, k) { b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); });
+  }
+  var NAMES = sim ? sim.names : [];
+  NAMES.forEach(function (n, i) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = n;
+    b.addEventListener('click', function () { sim.jump(i); });
+    $('list').appendChild(b); buttons.push(b);
+  });
 
   // 画面に見えている間だけ動かす（埋め込みの中なので、親の画面での枠の位置で判断する）
   function onScreen() {
