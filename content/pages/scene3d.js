@@ -660,7 +660,7 @@ window.FactoryScene = function (host, ui) {
     return { pos: camPos({ target: t, el: clamp(v.el + userEl, 0.15, 1.5), az: v.az + userAz }, v.dist * userZoom), look: t };
   }
   function resetUser() { userAz = 0; userEl = 0; userZoom = 1; userPan.set(0, 0, 0); }
-  function touched() { if (ui && ui.user) ui.user(); }   // 見る人が操作した（見て回るのを少し止める）
+  function touched() { if (ui && ui.user) ui.user(); }   // 見る人が操作した（使う側へ知らせる。見て回るのは止めない）
   function focus(i) {
     if (i === now) return;
     now = i; resetUser();
