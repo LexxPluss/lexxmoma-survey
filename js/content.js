@@ -190,7 +190,8 @@ var Content = (function () {
 
   function renderBar() {
     var bar = document.getElementById('section-bar');
-    if (!linked()) { bar.hidden = true; return; }
+    var SHOW = false;   // 右側の上の「6 / 6 セクション名」の帯は出さない（左のアンケートに同じ情報があるため）
+    if (!SHOW || !linked()) { bar.hidden = true; return; }
     var s = state.current;
     var pos = s === DONE ? '送信後' : s + ' / ' + state.sections;
     var now = '<div class="step-now"><span class="step-pos">' + esc(pos) + '</span>' +
