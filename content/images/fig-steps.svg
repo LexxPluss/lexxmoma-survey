@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 216" font-family="Hiragino Sans, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', Meiryo, sans-serif">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5F6B76"/></marker><marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0068B7"/></marker></defs>
+<rect width="640" height="216" fill="#fff"/>
+<polygon points="4,20 118,20 130,42 118,64 4,64 " fill="#0068B7"/>
+<text x="65.0" y="42.0" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">検討・体制</text>
+<rect x="9" y="76" width="114" height="28" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="66.0" y="90.0" font-size="11" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">推進体制</text>
+<rect x="9" y="112" width="114" height="28" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="66.0" y="126.0" font-size="11" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">費用対効果</text>
+<polygon points="130,20 244,20 256,42 244,64 130,64 142,42" fill="#2F82C8"/>
+<text x="191.0" y="42.0" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">技術検証</text>
+<rect x="135" y="76" width="114" height="28" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="192.0" y="90.0" font-size="11" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">技術検証・試験</text>
+<rect x="135" y="112" width="114" height="28" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="192.0" y="126.0" font-size="11" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">ハンド・治具</text>
+<rect x="135" y="148" width="114" height="28" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="192.0" y="162.0" font-size="11" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">認識・組付け</text>
+<polygon points="256,20 370,20 382,42 370,64 256,64 268,42" fill="#0068B7"/>
+<text x="317.0" y="42.0" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">安全・承認</text>
+<rect x="261" y="76" width="114" height="28" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="318.0" y="90.0" font-size="11" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">安全・承認</text>
+<polygon points="382,20 496,20 508,42 496,64 382,64 394,42" fill="#2F82C8"/>
+<text x="443.0" y="42.0" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">試験導入</text>
+<rect x="387" y="76" width="114" height="28" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="444.0" y="90.0" font-size="11" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">設備との連携</text>
+<rect x="387" y="112" width="114" height="28" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="444.0" y="126.0" font-size="11" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">品種追加・段取り替え</text>
+<polygon points="508,20 622,20 634,42 622,64 508,64 520,42" fill="#0068B7"/>
+<text x="569.0" y="42.0" font-size="13" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">運用・保全</text>
+<rect x="513" y="76" width="114" height="28" rx="6" fill="#fff" stroke="#0068B7" stroke-width="1.5"/>
+<text x="570.0" y="90.0" font-size="11" fill="#1F2933" text-anchor="middle" dominant-baseline="middle" font-weight="500">異常時の対応・保全</text>
+<text x="320" y="204.0" font-size="12" fill="#5F6B76" text-anchor="middle" dominant-baseline="middle" font-weight="500">Q3-1 の選択肢が、導入までのどの段階で効いてくるかの目安</text>
+</svg>
