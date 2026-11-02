@@ -48,10 +48,18 @@
   .fs svg { width: 20px; height: 20px; }
   body.is-big { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
   body.is-big #stage { flex: 1; height: auto; }
+  /* 大きく見るときの上の帯（見出しと「閉じて回答へ」） */
+  #bigbar { display: none; }
+  body.is-big #bigbar { display: flex; flex: none; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; }
+  #bigbar span { flex: 1; min-width: 0; font-size: 15px; font-weight: 800; color: var(--main); }
+  #bigbar small { font-weight: 400; color: var(--sub); font-size: 12px; margin-left: 6px; }
+  #bigclose { flex: none; font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 999px; border: 0; background: var(--main); color: #fff; cursor: pointer; }
+  #bigclose:hover { background: #00579a; }
   body.is-big #list { flex: none; padding: 8px 8px 10px; }
 </style>
 </head>
 <body>
+<div id="bigbar"><span>工場での使いどころの例<small>5つを順に案内します（約50秒）</small></span><button type="button" id="bigclose">閉じて回答へ ✕</button></div>
 <div id="stage"><button type="button" class="fs" id="fs" title="大きく見る" aria-label="大きく見る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><iframe id="detail" title="使いどころの詳しい表示" hidden></iframe><span id="speed"></span><div id="zoom"><button type="button" data-z="in" title="寄る" aria-label="寄る">＋</button><button type="button" data-z="out" title="引く" aria-label="引く">－</button><button type="button" data-z="reset" title="元の向きに戻す" aria-label="元の向きに戻す">⟲</button></div><span id="hint"></span><div id="name"></div></div>
 <div id="ask" hidden><b>問い</b><span></span></div>
 <div id="prog"><div class="segs"></div><span class="t"></span></div>
@@ -173,34 +181,48 @@
   }
   if (sim && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) requestAnimationFrame(frame);
 
-  // 大きく見る：埋め込みの枠を、アンケートのタブの中いっぱいに広げる（ブラウザの全画面にはしない）。もう一度押すか Esc で戻る
+  // 大きく見る：埋め込みの枠を、アンケートのタブの中にポップアップのように出す（ブラウザの全画面にはしない）。
+  // 「閉じて回答へ」・右下のボタン・Esc・外側の暗いところを押すと戻る。アンケートの画面からは window.sceneBig(true) で開く
   (function () {
-    var b = document.getElementById('fs'), big = false, saved = [];
+    var b = document.getElementById('fs'), big = false, saved = [], shade = null;
     var frame = null, top = window;
     try { frame = window.frameElement; if (frame) top = window.parent; } catch (e) { frame = null; }
     var ICON_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
         ICON_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
     function keep(el, css) { saved.push([el, el.style.cssText]); for (var k in css) el.style.setProperty(k, css[k], 'important'); }
-    function fit() { if (big && frame) frame.style.setProperty('height', top.innerHeight + 'px', 'important'); }
+    function place() {                      // 画面の中央に、まわりを少しあけて置く（スマホは小さくあける）
+      var W = top.innerWidth, H = top.innerHeight, m = W < 700 ? 8 : 24, w = Math.min(W - 2 * m, 1280), h = H - 2 * m;
+      return { left: Math.round((W - w) / 2) + 'px', top: m + 'px', width: w + 'px', height: h + 'px' };
+    }
+    function fit() { if (!big || !frame) return; var p = place(); for (var k in p) frame.style.setProperty(k, p[k], 'important'); }
     function set(on) {
       if (on === big) return;
       big = on;
       if (on) {
         if (frame) {
-          keep(frame, { position: 'fixed', left: '0', top: '0', width: '100%', height: top.innerHeight + 'px', margin: '0', 'max-width': 'none', 'z-index': '2147483000', background: '#fff' });
+          var p = place();
+          keep(frame, { position: 'fixed', left: p.left, top: p.top, width: p.width, height: p.height, margin: '0', 'max-width': 'none', 'z-index': '2147483000',
+                        background: '#fff', 'border-radius': '12px', 'box-shadow': '0 12px 48px rgba(0,20,40,.35)' });
           // 親の画面で、枠より手前に出てしまう重なり（貼り付いた上部など）を越えられるよう、枠の外側の箱も一番手前へ
           for (var el = frame.parentElement; el && el !== top.document.body; el = el.parentElement)
             if (top.getComputedStyle(el).position !== 'static') keep(el, { 'z-index': '2147483000' });
           keep(top.document.documentElement, { overflow: 'hidden' });
+          shade = top.document.createElement('div');   // 後ろを暗くする（押すと閉じる）
+          shade.style.cssText = 'position:fixed;inset:0;z-index:2147482999;background:rgba(16,24,32,.55)';
+          shade.addEventListener('click', function () { set(false); });
+          top.document.body.appendChild(shade);
         }
       } else {
         while (saved.length) { var x = saved.pop(); x[0].style.cssText = x[1]; }
+        if (shade) { shade.remove(); shade = null; }
       }
       document.body.classList.toggle('is-big', on);
       var t = on ? '元の大きさに戻す' : '大きく見る';
       b.title = t; b.setAttribute('aria-label', t); b.innerHTML = on ? ICON_CLOSE : ICON_OPEN;
     }
+    window.sceneBig = set;
     b.addEventListener('click', function () { set(!big); });
+    document.getElementById('bigclose').addEventListener('click', function () { set(false); });
     var esc = function (e) { if (e.key === 'Escape') set(false); };
     document.addEventListener('keydown', esc);
     if (frame) { top.document.addEventListener('keydown', esc); top.addEventListener('resize', fit); }

@@ -173,6 +173,18 @@
     var g = document.createElement('div'); g.id = 'sv-cases'; g.className = 'sv-cases';
     title.insertAdjacentElement('afterend', g);
     updateCases();
+    // ページを開いたら、3D をポップアップで出す（この訪問で1回だけ。閉じたあとは「3Dを見る」で開き直せる）
+    var shown = false;
+    try { shown = sessionStorage.getItem('lexxmoma-scene-popup') === '1'; sessionStorage.setItem('lexxmoma-scene-popup', '1'); } catch (e) { }
+    if (!shown) openScene();
+  }
+  function openScene() {                   // 右側の「工場での使いどころの例」の3Dを、ポップアップで開く
+    var f = document.querySelector('#info iframe[src*="scene.html"]');
+    if (!f) return;
+    var go = function () { try { f.contentWindow.sceneBig(true); } catch (e) { } };
+    try { if (f.contentWindow && f.contentWindow.sceneBig) { go(); return; } } catch (e) { }
+    f.setAttribute('loading', 'eager');     // まだ読み込んでいなければ、すぐ読み込む
+    f.addEventListener('load', function h() { f.removeEventListener('load', h); setTimeout(go, 50); });
   }
   function updateCases() {
     var g = $('sv-cases'); if (!g) return;
@@ -183,7 +195,7 @@
     g.innerHTML = '<p class="sv-cases-lead"><strong>まず、工場での使いどころの例を5つご覧ください。</strong><br>' +
       (narrow ? '下' : '右') + 'の3Dが、工場の中を順に案内します（約50秒）。</p>' +
       '<ol>' + CASES.map(function (c, i) { return '<li class="' + (seen[i] ? 'is-seen' : '') + '">' + escHtml(c) + '</li>'; }).join('') + '</ol>' +
-      '<div class="sv-cases-act">' + (narrow ? '<button type="button" class="btn btn-ghost" data-case="look">3Dを見る ↓</button>' : '') +
+      '<div class="sv-cases-act"><button type="button" class="btn btn-ghost" data-case="look">3Dを見る</button>' +
       (open ? '<span class="sv-cases-ok">' + (done ? '5つとも見ました。下の質問にお答えください。' : '見た使いどころ ' + n + ' / 5') + '</span>'
             : '<button type="button" class="btn btn-ghost" data-case="skip">先に回答する</button>') + '</div>';
   }
@@ -191,7 +203,7 @@
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-case]'); if (!b) return;
     if (b.getAttribute('data-case') === 'skip') { caseOpen = true; updateCases(); }
-    else { var info = $('info'); if (info) info.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    else openScene();
   });
 
   /* ---------- フォームの埋め込み ---------- */
