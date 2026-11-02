@@ -37,7 +37,7 @@ rep('let VERIFY = null;', 'let VERIFY = { hits: [], total: Infinity, frames: 0, 
 rep("let cur = 0, plan = null, tline = null, playing = true, speed = 1, endWait = 0, cmpMode = false;",
     "let cur = 0, plan = null, tline = null, playing = true, speed = +(location.search.match(/[?&]speed=([\\d.]+)/) || [])[1] || 1, endWait = 0, cmpMode = false;\n"
     "function onScreen() {   // 埋め込みの枠が、外側の画面まで含めて見えているか\n"
-    "  try { let w = window; while (w.frameElement) { const fe = w.frameElement; if (!fe.offsetParent) return false; const r = fe.getBoundingClientRect(); if (r.bottom < 0 || r.top > w.parent.innerHeight) return false; w = w.parent; } return document.visibilityState !== 'hidden'; }\n"
+    "  try { let w = window; while (w.frameElement) { const fe = w.frameElement; if (!fe.getClientRects().length) return false; const r = fe.getBoundingClientRect(); if (r.bottom < 0 || r.top > w.parent.innerHeight) return false; w = w.parent; } return document.visibilityState !== 'hidden'; }\n"
     "  catch (e) { return true; }\n"
     "}")
 rep("""  if (cmpMode || !plan) return;

@@ -44,11 +44,12 @@
 <script src="moma-model.js?v=2"></script>
 <script src="scene3d.js?v=20"></script>
 <script>
-  var SPEED = 2;   // 再生の速さ（実時間の何倍で見せるか）
+  var SPEED = 3;   // 再生の速さ（実時間の何倍で見せるか）
   // 使いどころの詳しい表示（社内の検討用ビューアから作った表示）。寄ったあと、その表示に切り替える
-  var DETAIL = { 4: 'supply.html?v=3&speed=' + SPEED };
-  // 自動で見て回る順番と、それぞれを見せる秒数（-1 は工場全体。詳しい表示は1回分が終わるまで）
-  var TOUR = [[-1, 8], [0, 12], [1, 12], [2, 12], [3, 12], [4, 70]];
+  var DETAIL = { 4: 'supply.html?v=4&speed=' + SPEED };
+  // 自動で見て回る順番と、それぞれを見せる秒数（-1 は工場全体）。一巡で約45秒に収める
+  // 詳しい表示は1回分が終わるか、秒数が来たら次へ
+  var TOUR = [[-1, 4], [0, 7], [1, 7], [2, 7], [3, 8], [4, 12]];
   var $ = function (id) { return document.getElementById(id); };
   $('speed').textContent = SPEED + '倍速';
   var buttons = [], names = [], cur = -2, tourAt = 0, tourT = 0, detailTimer = null;
@@ -106,7 +107,7 @@
     try {
       var fe = window.frameElement;
       if (!fe) return document.visibilityState !== 'hidden';
-      if (!fe.offsetParent || parent.document.visibilityState === 'hidden') return false;
+      if (!fe.getClientRects().length || parent.document.visibilityState === 'hidden') return false;
       var r = fe.getBoundingClientRect();
       return r.bottom > 0 && r.top < parent.innerHeight;
     } catch (e) { return true; }

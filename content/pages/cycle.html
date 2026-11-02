@@ -206,7 +206,7 @@
     try {
       var fe = window.frameElement;
       if (!fe) return document.visibilityState !== 'hidden';
-      if (!fe.offsetParent || parent.document.visibilityState === 'hidden') return false;
+      if (!fe.getClientRects().length || parent.document.visibilityState === 'hidden') return false;
       var r = fe.getBoundingClientRect();
       return r.bottom > 0 && r.top < parent.innerHeight;
     } catch (e) { return true; }

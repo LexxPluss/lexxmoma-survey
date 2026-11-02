@@ -1392,7 +1392,7 @@ const fillL = new THREE.DirectionalLight('#ffffff', 0.28); fillL.position.set(-4
 const orbit = new Orbit(cam, renderer.domElement);
 let cur = 0, plan = null, tline = null, playing = true, speed = +(location.search.match(/[?&]speed=([\d.]+)/) || [])[1] || 1, endWait = 0, cmpMode = false;
 function onScreen() {   // 埋め込みの枠が、外側の画面まで含めて見えているか
-  try { let w = window; while (w.frameElement) { const fe = w.frameElement; if (!fe.offsetParent) return false; const r = fe.getBoundingClientRect(); if (r.bottom < 0 || r.top > w.parent.innerHeight) return false; w = w.parent; } return document.visibilityState !== 'hidden'; }
+  try { let w = window; while (w.frameElement) { const fe = w.frameElement; if (!fe.getClientRects().length) return false; const r = fe.getBoundingClientRect(); if (r.bottom < 0 || r.top > w.parent.innerHeight) return false; w = w.parent; } return document.visibilityState !== 'hidden'; }
   catch (e) { return true; }
 }
 const EXTRA = [['予備在庫の回し方', () => renderCycle()], ['高さの使い方', () => renderReach()], ['収納の比較', () => renderCompare()]];
