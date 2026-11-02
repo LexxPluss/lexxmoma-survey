@@ -473,7 +473,8 @@ window.FactoryScene = function (host, ui) {
 
   /* ④ 完成部品のセットパック（物流）：1台分の部品を、部品棚から1つのポリ箱にそろえる。
      部品棚は通路をはさんで向かい合わせ（通路幅1.9m・棚の奥行き0.9m・1間口0.73m。実際は片側18間口ほど、ここでは11間口に縮めた）。
-     LexxMoMa は空のポリ箱を天面に載せてスタートし、片側を進みながら表示灯の点いた間口で部品を取り、奥で折り返して反対側を戻る（U字に一周）。 */
+     LexxMoMa は空のポリ箱を天面に載せてスタートし、片側を進みながら表示灯の点いた間口で部品を取り、奥で折り返して反対側を戻る（U字に一周）。
+     2台が半周ずらして同じ U 字を回る。 */
   (function () {
     var X0 = 5.55, N = 11, P = 0.73, XE = X0 + N * P, ZN = 1.6, ZS = 4.4, LN = 2.55, LS = 3.45;   // 棚（北・南）の中心、通路の行き・帰りの走行線
     var LV = [0.5, 0.85, 1.2, 1.55];                                     // 段の手前の高さ（手前へ下がる流動棚）
@@ -530,45 +531,67 @@ window.FactoryScene = function (host, ui) {
       g.userData = { size: { x: 0.09, y: 0.07, z: 0.08 } }; return shade(g);
     }
     var nextBox = polyBox(); scene.add(nextBox); nextBox.position.set(X0 - 1.25, 0.86, LN);
-    var outs = [], kits = 0, cur = null, k = 0;
+    var outs = [], kits = 0, k = 0;
     var DECK = V3(-0.2, 0.86, 0.2);                                       // 天面のポリ箱の置き場所（アームの付け根の後ろ横）
     var SLOT = [[-0.1, -0.06], [0, -0.06], [0.1, -0.06], [-0.1, 0.06], [0, 0.06], [0.1, 0.06]];
     function binAt(side, i, li) {           // 間口 i・段 li の箱の手前（取る位置）
       var face = side === 'n' ? 1 : -1, zc = side === 'n' ? ZN : ZS;
       return V3(X0 + (i + 0.5) * P - 0.17, LV[li] + 0.24, zc + face * 0.32);
     }
-    var bot = Bot(X0 - 0.45, LN, 0);
-    function pickTo(side, i, li) {          // 表示灯の点いた間口へ走って、部品を1つ取り、天面のポリ箱へ入れる
-      var lamp = lamps[side + i + '-' + li], part0 = null, ln = side === 'n' ? LN : LS;
-      bot.go(X0 + (i + 0.5) * P - 0.17, ln);
-      bot.call(function () { lamp.emissiveIntensity = 1.2; part0 = smallPart(k++); scene.add(part0); part0.position.copy(binAt(side, i, li)); });
-      bot.pick(function () { return part0; }, function () { return binAt(side, i, li); });
-      bot.call(function () { lamp.emissiveIntensity = 0; });
-      bot.armTo(function () { return cur.localToWorld(V3(0, 0.36, 0)); }, 0.7);   // ポリ箱の上から入れる
-      bot.call(function () { var o = bot.held, s2 = SLOT[cur.userData.n++ % SLOT.length]; bot.held = null; cur.attach(o); o.position.set(s2[0], -0.04, s2[1]); o.rotation.set(0, 0, 0); });
-      bot.grip(1);
+    // 2台の LexxMoMa が同じ U 字を半周ずらして回る。前の機体が進む先にいる間は、手前で待つ（追い越さない・ぶつからない）
+    var bots = [Bot(X0 - 0.45, LN, 0), Bot(X0 - 0.45, LS, -Math.PI)];
+    function clear(me, other, tx, tz) {      // me が (tx, tz) へまっすぐ走るとき、進む先に other がいないか
+      var dx = tx - me.x, dz = tz - me.z, L = Math.hypot(dx, dz);
+      if (L < 1e-3) return Math.hypot(other.x - tx, other.z - tz) > 0.95;
+      var t = ((other.x - me.x) * dx + (other.z - me.z) * dz) / L;          // 進む向きに沿った、other までの距離
+      var off = Math.abs((other.x - me.x) * dz - (other.z - me.z) * dx) / L; // 走る線からの横のずれ
+      return t <= 0.05 || t > L + 0.95 || off > 0.85;
     }
-    bot.script = function () {
-      // スタート：空のポリ箱を後ろの置き台から取り、天面へ
-      bot.pick(function () { return nextBox; }, function () { return nextBox.position.clone(); });
-      bot.armTo(function () { return bot.R.g.localToWorld(DECK.clone().add(V3(0, 0.42, 0))); }, 0.8);
-      bot.call(function () { cur = bot.held; bot.held = null; bot.R.g.attach(cur); cur.position.copy(DECK); cur.rotation.set(0, 0, 0); });
-      bot.grip(1);
-      bot.call(function () { nextBox = polyBox(); scene.add(nextBox); nextBox.position.set(X0 - 1.25, 0.86, LN); });
-      // 行き（北側の棚）→ 奥で折り返し → 帰り（南側の棚）。取る間口は毎回変える
-      var pickN = [], pickS = [];
-      while (pickN.length < 3) { var a = Math.floor(Math.random() * N); if (pickN.indexOf(a) < 0) pickN.push(a); }
-      while (pickS.length < 3) { var c = Math.floor(Math.random() * N); if (pickS.indexOf(c) < 0) pickS.push(c); }
-      pickN.sort(function (p, q) { return p - q; }).forEach(function (i) { pickTo('n', i, 1 + Math.floor(Math.random() * 2)); });
-      bot.go(XE + 0.2, LN); bot.turn(-Math.PI / 2); bot.go(XE + 0.2, LS); bot.turn(-Math.PI);
-      pickS.sort(function (p, q) { return q - p; }).forEach(function (i) { pickTo('s', i, 1 + Math.floor(Math.random() * 2)); });
-      // エンド：そろえたポリ箱を後ろの置き台へ
-      bot.go(X0 - 0.45, LS);
-      bot.pick(function () { return cur; }, function () { return cur.getWorldPosition(V3()); });
-      bot.place(function () { return V3(X0 - 1.25, 0.86, LS + (outs.length % 2 ? 0.12 : -0.12)); }, function (o) { outs.push(o); kits++; if (outs.length > 2) scene.remove(outs.shift()); });
-      bot.turn(-Math.PI * 1.5); bot.go(X0 - 0.45, LN); bot.turn(-Math.PI * 2);
-      bot.call(function () { bot.h = 0; bot.lastH = 0; });
-    };
+    function runner(bot, other, delay) {
+      var cur = null, first = true;
+      function go(tx, tz) { bot.until(function () { return clear(bot, other, tx, tz); }); bot.go(tx, tz); }
+      function pickTo(side, i, li) {        // 表示灯の点いた間口へ走って、部品を1つ取り、天面のポリ箱へ入れる
+        var lamp = lamps[side + i + '-' + li], part0 = null, ln = side === 'n' ? LN : LS;
+        go(X0 + (i + 0.5) * P - 0.17, ln);
+        bot.call(function () { lamp.emissiveIntensity = 1.2; part0 = smallPart(k++); scene.add(part0); part0.position.copy(binAt(side, i, li)); });
+        bot.pick(function () { return part0; }, function () { return binAt(side, i, li); });
+        bot.call(function () { lamp.emissiveIntensity = 0; });
+        bot.armTo(function () { return cur.localToWorld(V3(0, 0.36, 0)); }, 0.7);   // ポリ箱の上から入れる
+        bot.call(function () { var o = bot.held, s2 = SLOT[cur.userData.n++ % SLOT.length]; bot.held = null; cur.attach(o); o.position.set(s2[0], -0.04, s2[1]); o.rotation.set(0, 0, 0); });
+        bot.grip(1);
+      }
+      function toStart() {                  // エンドから、スタートへ戻る
+        bot.turn(-Math.PI * 1.5); go(X0 - 0.45, LN); bot.turn(-Math.PI * 2);
+        bot.call(function () { bot.h = 0; bot.lastH = 0; });
+      }
+      bot.script = function () {
+        if (first) {                        // 2台目は、半周遅れでエンド側から出る
+          first = false;
+          if (delay) { var t0 = clock; bot.until(function () { return clock - t0 > delay; }); toStart(); return; }
+        }
+        // スタート：空のポリ箱を後ろの置き台から取り、天面へ
+        bot.pick(function () { return nextBox; }, function () { return nextBox.position.clone(); });
+        bot.armTo(function () { return bot.R.g.localToWorld(DECK.clone().add(V3(0, 0.42, 0))); }, 0.8);
+        bot.call(function () { cur = bot.held; bot.held = null; bot.R.g.attach(cur); cur.position.copy(DECK); cur.rotation.set(0, 0, 0); });
+        bot.grip(1);
+        bot.call(function () { nextBox = polyBox(); scene.add(nextBox); nextBox.position.set(X0 - 1.25, 0.86, LN); });
+        // 行き（北側の棚）→ 奥で折り返し → 帰り（南側の棚）。取る間口は毎回変える
+        var pickN = [], pickS = [];
+        while (pickN.length < 3) { var a = Math.floor(Math.random() * N); if (pickN.indexOf(a) < 0) pickN.push(a); }
+        while (pickS.length < 3) { var c = Math.floor(Math.random() * N); if (pickS.indexOf(c) < 0) pickS.push(c); }
+        pickN.sort(function (p, q) { return p - q; }).forEach(function (i) { pickTo('n', i, 1 + Math.floor(Math.random() * 2)); });
+        go(XE + 0.2, LN); bot.turn(-Math.PI / 2); go(XE + 0.2, LS); bot.turn(-Math.PI);
+        pickS.sort(function (p, q) { return q - p; }).forEach(function (i) { pickTo('s', i, 1 + Math.floor(Math.random() * 2)); });
+        // エンド：そろえたポリ箱を後ろの置き台へ
+        go(X0 - 0.45, LS);
+        bot.pick(function () { return cur; }, function () { return cur.getWorldPosition(V3()); });
+        bot.place(function () { return V3(X0 - 1.25, 0.86, LS + (outs.length % 2 ? 0.12 : -0.12)); }, function (o) { outs.push(o); kits++; if (outs.length > 2) scene.remove(outs.shift()); });
+        toStart();
+      };
+    }
+    runner(bots[0], bots[1], 0);
+    runner(bots[1], bots[0], 14);
+    var bot = { step: function (dt) { bots.forEach(function (b) { b.step(dt); }); }, pose: function () { bots.forEach(function (b) { b.pose(); }); } };
     cells.push({ name: '完成部品のセットパック', short: 'セットパック', view: { az: -1.5708, el: 0.22, w: 1.1, d: 1.0 }, at: V3(X0 + N * P / 2 - 0.4, 0.8, 3.0), bot: bot, tick: function () {} });
   })();
 
