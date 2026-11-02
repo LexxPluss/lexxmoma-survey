@@ -181,7 +181,7 @@
     sv.classList.toggle('sv-locked', !open);
     var n = CASES.filter(function (c, i) { return seen[i]; }).length;
     g.innerHTML = '<p class="sv-cases-lead"><strong>まず、工場での使いどころの例を5つご覧ください。</strong><br>' +
-      (narrow ? '下' : '右') + 'の3Dが、工場の中を順に案内します（約2分）。</p>' +
+      (narrow ? '下' : '右') + 'の3Dが、工場の中を順に案内します（約50秒）。</p>' +
       '<ol>' + CASES.map(function (c, i) { return '<li class="' + (seen[i] ? 'is-seen' : '') + '">' + escHtml(c) + '</li>'; }).join('') + '</ol>' +
       '<div class="sv-cases-act">' + (narrow ? '<button type="button" class="btn btn-ghost" data-case="look">3Dを見る ↓</button>' : '') +
       (open ? '<span class="sv-cases-ok">' + (done ? '5つとも見ました。下の質問にお答えください。' : '見た使いどころ ' + n + ' / 5') + '</span>'

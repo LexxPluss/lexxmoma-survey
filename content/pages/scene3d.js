@@ -583,13 +583,25 @@ window.FactoryScene = function (host, ui) {
     var g = new THREE.Group(); scene.add(g);
     var m = window.SupplyModel ? window.SupplyModel(g) : null;
     var Z0 = m ? LINE_S + m.area.lz : -5.45;                                               // 人の作業域の北の端をコンベヤにそろえる
-    g.position.set(X, 0, Z0);
+    // 動きの計算は、詳しい表示と同じく原点に置いた状態で行う（中で世界座標を使うため、ずらしたまま動かすと MoMa が通路の外へずれる）。
+    // 置き場所へ動かすのは描画のときだけ
+    var place = function (on) { g.position.set(on ? X : 0, 0, on ? Z0 : 0); g.updateMatrixWorld(true); };
+    place(true);
+    if (m) {                                                                               // 通路の東の端：部品置き場（MoMa はここから出て、ここへ戻る）
+      var YZ = Z0 + m.area.zB + m.area.aw / 2;
+      plane(X + 4.75, X + 5.85, YZ - 0.9, YZ + 0.9, '#7b8794', 0.06); outline(X + 4.75, X + 5.85, YZ - 0.9, YZ + 0.9, '#b7c3cd');
+      floorText('部品置き場', X + 5.3, YZ + 1.25, 1.6);
+      [-0.45, 0.45].forEach(function (dz, i) {
+        cart(X + 5.3, YZ + dz, Math.PI / 2);
+        [-0.2, 0.2].forEach(function (d2) { var c = crate(i ? C.empty : C.full, { x: 0.335, y: 0.149, z: 0.5 }); c.position.set(X + 5.3, 0.875, YZ + dz + d2); c.rotation.y = Math.PI / 2; scene.add(c); });
+      });
+    }
     var at = m ? V3(X + m.center.x, m.center.y - 0.45, Z0 + m.center.z) : V3(X, 0.65, -4.6);
     var bot = { step: function () {}, pose: function () {} };                             // MoMa は supply-model.js の中で動く
     cells.push({ name: '生産ライン横の部品供給', short: 'ライン横の部品供給', view: { az: 1.36, el: 0.4, w: 1.2, d: 1.5, same: m ? { span: m.span } : null }, at: at, bot: bot,
       tick: function (dt) {
         cars.forEach(function (c) { c.position.x += dt * 0.22; if (c.position.x > 16.6) c.position.x -= 17.1; c.visible = c.position.x > 0.2; });
-        if (m) m.tick(dt);
+        if (m) { place(false); m.tick(dt); place(true); }
         lamps.forEach(function (l, i) { l.emissiveIntensity = (i + Math.floor(clock / 2)) % 8 === 0 ? 1 : 0.5; });
       } });
   })();

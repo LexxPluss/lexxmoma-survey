@@ -968,9 +968,9 @@ function buildMain(root) {
     ]; };
   const down = (yFn, label) => A.arm(m, () => { const w = m.curWrist.clone(); w.y = yFn(); return w; }, 0.9, label);
   const empty1 = T.q[0], empty2 = T2.q[0], rb = RV.q[0], hb = HV.q[0];
-  m.g.rotation.y = 0; m.g.position.set(stLR.x - 4.3, 0, stLR.zT); m.curWrist = m.homeW(); m.ik(m.curWrist);
+  m.g.rotation.y = Math.PI; m.g.position.set(stLR.x + 4.3, 0, stLR.zT); m.curWrist = m.homeW(); m.ik(m.curWrist);
   const steps = [
-    A.call(() => { m.g.rotation.y = 0; m.g.position.set(stLR.x - 4.3, 0, stLR.zT); }, '消費連動：空箱の信号を受けてMoMaが出発', 0.6),
+    A.call(() => { m.g.rotation.y = Math.PI; m.g.position.set(stLR.x + 4.3, 0, stLR.zT); }, '消費連動：空箱の信号を受けてMoMaが出発', 0.6),
     A.drive(m, stLR.x, 3.0, `MoMaが通路を走り、担当列の${Math.round(Math.abs(stLR.dx) * 1000)}mm横で止まる`),
     A.turn(m, FACE, 1.4, 'その場で90°旋回して棚に向き直る（2輪駆動なので、棚へは前進・後退で近づく）'),
     A.call(() => empty1.userData.setEmpty(), 'ライン側：取り出し段1と2の先頭の箱を使い切る（時間は省略）', 0.9, 'human'),
@@ -1011,6 +1011,7 @@ function buildMain(root) {
     A.arc(m, () => m.homeW(), 1.0, '手先を走行姿勢に戻す', { back: true, zMin: zOut }),
     A.turn(m, 0, 1.4, 'その場で90°旋回して通路の向きへ'),
     A.drive(m, stLR.x + 4.3, 2.4, 'MoMaは部品置き場へ（空箱を下ろし、次の品番の箱を2箱積む）'),
+    A.turn(m, Math.PI, 1.4, '部品置き場で向きを変える'),
   ];
   return { steps, center: V3(0, 1.1, D / 2 + 0.3), span: Math.max(0.95, M(Lo.width) / 2.0) };
 }

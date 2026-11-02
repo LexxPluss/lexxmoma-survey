@@ -37,6 +37,12 @@ rep("grid.position.set(0, 0.001, (o.zB + aw - lz) / 2); root.add(grid);", "grid.
 rep("  const ln = addBox(root, xMax - xMin, 0.42, 0.7, '#dfe4e8', (xMin + xMax) / 2, 0.21, -lz - 0.45);\n  addBox(root, xMax - xMin, 0.02, 0.6, '#b8c2ca', (xMin + xMax) / 2, 0.43, -lz - 0.45);\n", '')
 rep("  return { xMin, xMax, lz, aw };\n}", "  AREA = { xMin, xMax, lz, aw, zB: o.zB };\n  return { xMin, xMax, lz, aw };\n}")
 
+# 工場の中では画面の外へ消えないので、MoMa は通路の端の部品置き場から出て、同じ場所へ戻り、向きを変えてからくり返す
+# （詳しい表示では左端から出て右端へ去るため、くり返すときに瞬間移動して見えた）
+rep("m.g.rotation.y = 0; m.g.position.set(stLR.x - 4.3, 0, stLR.zT);", "m.g.rotation.y = Math.PI; m.g.position.set(stLR.x + 4.3, 0, stLR.zT);", 2)
+rep("    A.drive(m, stLR.x + 4.3, 2.4, 'MoMaは部品置き場へ（空箱を下ろし、次の品番の箱を2箱積む）'),\n",
+    "    A.drive(m, stLR.x + 4.3, 2.4, 'MoMaは部品置き場へ（空箱を下ろし、次の品番の箱を2箱積む）'),\n    A.turn(m, Math.PI, 1.4, '部品置き場で向きを変える'),\n")
+
 # buildMain が使う、右パネル側の小さな関数
 part2 += "const f1 = v => (Math.round(v * 10) / 10).toFixed(1);\n"
 
