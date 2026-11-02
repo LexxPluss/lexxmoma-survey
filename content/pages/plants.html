@@ -5,37 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>対象11工場の早見表</title>
 <style>
-  /* Q4-1 の右側：トヨタ自動車の国内11工場の早見表（事実を並べるだけ。回答を誘導しない） */
-  :root { --main: #0068B7; --main-pale: #e8f1f9; --text: #1f2933; --sub: #5f6b76; --line: #e2e7ec; }
+  /* Q4-1 の右側：トヨタ自動車の国内11工場の早見表（事実を並べるだけ。回答を誘導しない。11工場とも同じ量・同じ書き方） */
+  :root { --main: #0068B7; --main-pale: #e8f1f9; --accent: #3EB370; --accent-pale: #eaf6ee; --text: #1f2933; --sub: #5f6b76; --line: #e2e7ec; }
   * { box-sizing: border-box; }
   body { margin: 0; padding: 8px 10px 10px; background: #fff; color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif; font-size: 13px; line-height: 1.45; }
-  ol { margin: 0; padding: 0; list-style: none; }
-  li { border-bottom: 1px solid var(--line); }
-  li:first-child { border-top: 1px solid var(--line); }
-  button.row { display: block; width: 100%; padding: 5px 6px; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
-  button.row:hover { background: #f6f8fa; }
-  li.is-checked button.row { background: var(--main-pale); }   /* フォームでチェックした工場（中身を示すだけ） */
-  .l1 { display: flex; align-items: baseline; gap: 8px; }
-  .name { font-weight: 700; white-space: nowrap; }
-  .city { color: var(--sub); font-size: .8rem; white-space: nowrap; }
-  .mark { margin-left: auto; color: var(--sub); font-size: .75rem; }
-  .l2 { margin-top: 1px; font-size: .78rem; color: #36424d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 1工場2行。全文は開いたときに */
-  .more { padding: 0 6px 6px; font-size: .75rem; color: var(--sub); }
-  .more b { font-weight: 400; color: var(--text); }
-  .more[hidden] { display: none; }
-  .na { color: #9aa5ae; }
-  .src { margin: 8px 0 0; font-size: .7rem; color: var(--sub); }
+  .lead { margin: 0 0 8px; font-size: .9rem; color: var(--sub); }
+  .lead b { color: var(--text); }
+  h2 { display: inline-block; margin: 10px 0 6px; padding: 3px 10px; border-radius: 4px; font-size: .95rem; }
+  h2.vehicle { background: var(--main-pale); color: var(--main); }
+  h2.parts { background: var(--accent-pale); color: #23864d; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .card { padding: 8px 10px 9px; border: 1.5px solid; border-radius: 8px; background: #fff; }
+  .vehicle .card { border-color: #7fb0dc; }
+  .parts .card { border-color: #9fd3b2; }
+  .card.is-checked { background: #fff8e1; border-color: #f0b429; box-shadow: 0 0 0 2px rgba(240,180,41,.25); }   /* フォームでチェックした工場（中身を示すだけ） */
+  .name { font-size: 1.02rem; font-weight: 800; }
+  .meta { font-size: .72rem; color: var(--sub); }
+  .prod { margin-top: 5px; font-size: .78rem; font-weight: 700; color: #1d4f8a; }
+  .parts .prod { color: #23604a; }
+  .na { color: #9aa5ae; font-weight: 400; }
+  .src { margin: 10px 0 0; font-size: .7rem; color: var(--sub); }
   .src a { color: var(--sub); }
 </style>
 </head>
 <body>
-<ol id="list"></ol>
+<p class="lead" id="lead"></p>
+<div id="groups"></div>
 <p class="src" id="src"></p>
 <script>
-  // 工場の情報は content/data/plants.json（公式サイトの記載そのまま）。並びはフォームの Q4-1 の選択肢と同じにする
+  // 工場の情報は content/data/plants.json（公式サイトの記載そのまま）。区分は主な生産品目から（group）。区分の中の並びはフォームの Q4-1 の選択肢と同じ
   var NA = '<span class="na">公式情報なし</span>';
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var key = function (label) { return String(label).split('（')[0].trim(); };   // 選択肢の「（」より前が工場名
+  var city = function (c) { return String(c || '').replace(/^愛知県/, ''); };
   function formOrder() {
     try {
       var f = parent.SURVEY_FORM, qs = [];
@@ -43,35 +45,33 @@
       return qs[0].choices.map(function (c) { return key(c.value); });
     } catch (e) { return null; }
   }
-  fetch('../data/plants.json?v=1').then(function (r) { return r.json(); }).then(function (d) {
+  fetch('../data/plants.json?v=2').then(function (r) { return r.json(); }).then(function (d) {
     var order = formOrder(), plants = d.plants.slice();
     if (order) plants.sort(function (a, b) { var i = order.indexOf(a.name), j = order.indexOf(b.name); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); });
-    document.getElementById('list').innerHTML = plants.map(function (p) {
-      return '<li data-name="' + esc(p.name) + '"><button type="button" class="row" aria-expanded="false">' +
-        '<div class="l1"><span class="name">' + esc(p.name) + '</span><span class="city">' + (p.city ? esc(p.city) : NA) + '</span><span class="mark">＋</span></div>' +
-        '<div class="l2">' + (p.products ? esc(p.products) : NA) + '</div></button>' +
-        '<div class="more" hidden>' + esc(d.fields.products) + '：<b>' + (p.products ? esc(p.products) : NA) + '</b><br>' +
-        esc(d.fields.completed) + '：<b>' + (p.completed ? p.completed + '年' : NA) + '</b></div></li>';
+    var cities = [];
+    plants.forEach(function (p) { var c = city(p.city); if (c && cities.indexOf(c) < 0) cities.push(c); });
+    document.getElementById('lead').innerHTML = '全' + plants.length + '工場が<b>愛知県内</b>（' + cities.map(esc).join('・') + '）';
+    document.getElementById('groups').innerHTML = Object.keys(d.groups).map(function (g) {
+      var list = plants.filter(function (p) { return p.group === g; });
+      return '<section class="' + g + '"><h2 class="' + g + '">' + esc(d.groups[g]) + '（' + list.length + '工場）</h2><div class="grid">' +
+        list.map(function (p) {
+          return '<div class="card" data-name="' + esc(p.name) + '"><div class="name">' + esc(p.name) + '</div>' +
+            '<div class="meta">' + esc(d.fields.completed) + ' ' + (p.completed ? p.completed + '年' : NA) + '　' + (p.city ? esc(city(p.city)) : NA) + '</div>' +
+            '<div class="prod">' + (p.products ? esc(p.products).replace(/、/g, '／') : NA) + '</div></div>';
+        }).join('') + '</div></section>';
     }).join('');
     var ck = d.checked.split('-');
     document.getElementById('src').innerHTML = '出典：' + [d.sources.products, d.sources.location].map(function (s) {
       return '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.title) + '</a>' + (s.asOf ? '（' + esc(s.asOf) + '）' : '');
-    }).join('、') + '。' + Number(ck[0]) + '年' + Number(ck[1]) + '月確認。';
-    // 行を押すと補足（完成年）を開く
-    document.getElementById('list').addEventListener('click', function (e) {
-      var b = e.target.closest('button.row'); if (!b) return;
-      var more = b.nextElementSibling, open = more.hidden;
-      more.hidden = !open; b.setAttribute('aria-expanded', open ? 'true' : 'false');
-      b.querySelector('.mark').textContent = open ? '－' : '＋';
-    });
+    }).join('、') + '。' + Number(ck[0]) + '年' + Number(ck[1]) + '月確認。区分は主な生産品目によります。';
     // 今のチェックを聞く（アンケートの画面が survey-answer で答える）
     try { parent.postMessage({ type: 'survey-ask', no: 'Q4-1' }, location.origin); } catch (e) { }
   });
-  // フォームで工場にチェックを入れたら、同じ行に薄い色を付ける
+  // フォームで工場にチェックを入れたら、同じ工場の札に色を付ける
   window.addEventListener('message', function (e) {
     if (e.origin !== location.origin || !e.data || e.data.type !== 'survey-answer' || e.data.no !== 'Q4-1') return;
     var picked = (e.data.values || []).map(key);
-    document.querySelectorAll('#list li').forEach(function (li) { li.classList.toggle('is-checked', picked.indexOf(li.getAttribute('data-name')) >= 0); });
+    document.querySelectorAll('.card').forEach(function (c) { c.classList.toggle('is-checked', picked.indexOf(c.getAttribute('data-name')) >= 0); });
   });
 </script>
 </body>

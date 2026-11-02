@@ -1,5 +1,5 @@
 {
-  "_note": "Q4-1 の右側の早見表（content/pages/plants.html）の内容。トヨタ自動車 公式サイトの記載をそのまま写す。公式で確認できない項目は null（画面では「公式情報なし」）。工場名はフォームの選択肢の「（」より前と一致させる（tools/sync_form.py が照合）。",
+  "_note": "Q4-1 の右側の早見表（content/pages/plants.html）の内容。トヨタ自動車 公式サイトの記載をそのまま写す。公式で確認できない項目は null（画面では「公式情報なし」）。工場名はフォームの選択肢の「（」より前と一致させる（tools/sync_form.py が照合）。 group は主な生産品目に車両があるか（vehicle）、部品・ユニットだけか（parts）。",
   "checked": "2026-11-02",
   "sources": {
     "products": {
@@ -28,7 +28,8 @@
         "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
         "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
       },
-      "checked": "2026-11-02"
+      "checked": "2026-11-02",
+      "group": "parts"
     },
     {
       "name": "元町工場",
@@ -40,7 +41,8 @@
         "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
         "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
       },
-      "checked": "2026-11-02"
+      "checked": "2026-11-02",
+      "group": "vehicle"
     },
     {
       "name": "上郷工場",
@@ -52,7 +54,8 @@
         "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
         "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
       },
-      "checked": "2026-11-02"
+      "checked": "2026-11-02",
+      "group": "parts"
     },
     {
       "name": "高岡工場",
@@ -64,7 +67,8 @@
         "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
         "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
       },
-      "checked": "2026-11-02"
+      "checked": "2026-11-02",
+      "group": "vehicle"
     },
     {
       "name": "三好工場",
@@ -76,7 +80,8 @@
         "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
         "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
       },
-      "checked": "2026-11-02"
+      "checked": "2026-11-02",
+      "group": "parts"
     },
     {
       "name": "堤工場",
@@ -88,7 +93,8 @@
         "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
         "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
       },
-      "checked": "2026-11-02"
+      "checked": "2026-11-02",
+      "group": "vehicle"
     },
     {
       "name": "明知工場",
@@ -100,7 +106,8 @@
         "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
         "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
       },
-      "checked": "2026-11-02"
+      "checked": "2026-11-02",
+      "group": "parts"
     },
     {
       "name": "下山工場",
@@ -112,7 +119,8 @@
         "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
         "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
       },
-      "checked": "2026-11-02"
+      "checked": "2026-11-02",
+      "group": "parts"
     },
     {
       "name": "衣浦工場",
@@ -124,7 +132,8 @@
         "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
         "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
       },
-      "checked": "2026-11-02"
+      "checked": "2026-11-02",
+      "group": "parts"
     },
     {
       "name": "田原工場",
@@ -136,7 +145,8 @@
         "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
         "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
       },
-      "checked": "2026-11-02"
+      "checked": "2026-11-02",
+      "group": "vehicle"
     },
     {
       "name": "貞宝工場",
@@ -148,7 +158,12 @@
         "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
         "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
       },
-      "checked": "2026-11-02"
+      "checked": "2026-11-02",
+      "group": "parts"
     }
-  ]
+  ],
+  "groups": {
+    "vehicle": "完成車の生産工場",
+    "parts": "部品・ユニットの生産工場"
+  }
 }
