@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LexxMoMa Tools のご案内</title>
+<style>
+  /* 最後のページと送信後の右側：LexxMoMa Tools（ツールサイト）への案内 */
+  :root { --main: #0068B7; --main-d: #00579a; --main-pale: #e8f1f9; --accent: #3EB370; --text: #1f2933; --sub: #5f6b76; --line: #e2e7ec; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 6px 8px 10px; background: #fff; color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif; font-size: 13px; line-height: 1.5; }
+  .hero { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; background: linear-gradient(135deg, #0068B7, #2f82c8); color: #fff; text-decoration: none; }
+  .hero:hover { background: linear-gradient(135deg, #00579a, #2a76b6); }
+  .hero .t { flex: 1; min-width: 0; }
+  .hero b { display: block; font-size: 1.15rem; letter-spacing: .02em; }
+  .hero span { font-size: .82rem; opacity: .92; }
+  .hero em { flex: none; font-style: normal; font-weight: 800; font-size: .85rem; padding: 7px 14px; border-radius: 999px; background: #fff; color: var(--main); white-space: nowrap; }
+  h3 { margin: 14px 2px 6px; font-size: .85rem; color: var(--sub); font-weight: 700; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+  a.tool { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; color: inherit; text-decoration: none; background: #fff; }
+  a.tool:hover { border-color: var(--main); box-shadow: 0 2px 10px rgba(0,104,183,.12); }
+  a.tool .n { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: .92rem; color: var(--main); }
+  a.tool .n i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  a.tool .d { font-size: .78rem; color: var(--sub); }
+  a.tool .go { margin-top: auto; padding-top: 2px; font-size: .75rem; font-weight: 700; color: var(--main); }
+  .soon { margin: 10px 2px 0; font-size: .78rem; color: var(--sub); }
+  .soon b { color: var(--text); font-weight: 700; }
+</style>
+</head>
+<body>
+<a class="hero" id="hero" target="_blank" rel="noopener">
+  <div class="t"><b>LexxMoMa Tools</b><span>導入の検討に使えるツールを1か所にまとめたサイトです</span></div>
+  <em>サイトを開く ↗</em>
+</a>
+<h3>すぐに使えるツール</h3>
+<div class="grid" id="grid"></div>
+<p class="soon"><b>準備中：</b>エンドエフェクタ設計ツール、サービスパーツカタログ</p>
+<script>
+  // 掲載はツールサイト（https://lexxpluss.github.io/lexxmoma-tools/）の「すぐに使える」ツールと同じ。サイトの掲載を変えたら、ここも合わせる
+  var SITE = 'https://lexxpluss.github.io/lexxmoma-tools/';
+  var TOOLS = [
+    ['見学ツアー', '会社紹介と、LexxMoMa の実機の映像を見る', 'library/index.html'],
+    ['工程シミュレーター（2D）', '工程図を作り、導入前後の人とモノの動きを比べる（ベータ版）', 'process-sketch/dist/process-sketch.html'],
+    ['動作シミュレーター（2D）', '工場の図面の上で走行とアーム動作を組み、所要時間を試算する', 'simulator/lexxmoma-2d.html'],
+    ['回収シミュレーター', '人件費と導入費から、投資を何年で回収できるかを試算する', 'lexxmoma-roi/dist/lexxmoma_roi.html'],
+    ['ロボットSIerデータベース', '全国のロボットSIer・装置メーカーを地図で探す', 'robot-sier-map/index.html'],
+    ['エンドエフェクタ事例データベース', '掴みたいモノから、ハンドの導入事例を探す', 'eoat-db/index.html']
+  ];
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  document.getElementById('hero').href = SITE;
+  document.getElementById('grid').innerHTML = TOOLS.map(function (t) {
+    return '<a class="tool" href="' + esc(SITE + t[2]) + '" target="_blank" rel="noopener"><span class="n"><i></i>' + esc(t[0]) + '</span><span class="d">' + esc(t[1]) + '</span><span class="go">開く ↗</span></a>';
+  }).join('');
+</script>
+</body>
+</html>
