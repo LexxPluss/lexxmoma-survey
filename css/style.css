@@ -449,3 +449,15 @@ textarea.sv-input { resize: vertical; min-height: 6em; line-height: 1.6; }
 .intro.is-compact.is-open .intro-bar { margin-bottom: 8px; }
 .intro-bar-title { flex: 1; min-width: 0; font-weight: 700; color: var(--main); font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .intro-toggle { font: inherit; font-size: .8rem; padding: 3px 12px; border-radius: 999px; border: 1px solid var(--main); background: #fff; color: var(--main); cursor: pointer; white-space: nowrap; }
+
+/* 表形式の質問（行ごとに1つ選ぶ） */
+.sv-grid { display: grid; gap: 2px; margin-top: 6px; }
+.sv-grid-row { padding: 7px 8px; border-radius: 8px; border: 1px solid transparent; }
+.sv-grid-row:nth-child(odd) { background: #f6f8fa; }
+.sv-grid-row.is-missing { border-color: #e0302a; background: #fff3f2; }
+.sv-grid-label { font-size: .9rem; margin-bottom: 4px; }
+.sv-grid-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.sv-chip { position: relative; display: inline-flex; align-items: center; padding: 3px 12px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: .85rem; cursor: pointer; }
+.sv-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.sv-chip.is-on { background: var(--main); border-color: var(--main); color: #fff; font-weight: 700; }
+.sv-chip:focus-within { outline: 2px solid var(--main); outline-offset: 2px; }

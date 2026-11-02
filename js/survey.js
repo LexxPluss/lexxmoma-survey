@@ -99,6 +99,16 @@ var Survey = (function () {
         for (var n = q.min; n <= q.max; n++) h += optionRow(q, 'radio', String(n), String(v) === String(n), ' sv-scale-opt');
         h += (q.maxLabel ? '<span class="sv-scale-label">' + esc(q.maxLabel) + '</span>' : '') + '</div>';
         break;
+      case 'grid':                              // 表形式：行ごとに1つ選ぶ（スマホでも読めるよう、行の下に選択肢を並べる）
+        var gv = v || {};
+        h += '<div class="sv-grid">' + q.rows.map(function (row, r) {
+          return '<div class="sv-grid-row" data-row="' + r + '"><div class="sv-grid-label">' + esc(row) + '</div><div class="sv-grid-opts">' +
+            q.columns.map(function (col) {
+              var on = gv[r] === col;
+              return '<label class="sv-chip' + (on ? ' is-on' : '') + '"><input type="radio" name="' + esc(q.id) + '::' + r + '" value="' + esc(col) + '"' + (on ? ' checked' : '') + '><span>' + esc(col) + '</span></label>';
+            }).join('') + '</div></div>';
+        }).join('') + '</div>';
+        break;
       case 'date':
       case 'time':
         h += '<input class="sv-input sv-short" type="' + q.type + '" name="' + esc(q.id) + '" value="' + esc(v || '') + '">';
@@ -173,6 +183,18 @@ var Survey = (function () {
     var t = ev.target;
     if (!t.name) return;
     if (t.name === '__email') { state.email = t.value.trim(); saveDraft(); return; }
+    var gm = /^(.+)::(\d+)$/.exec(t.name);   // 表形式の質問（名前は「質問ID::行番号」）
+    if (gm) {
+      var gq = qById(gm[1]); if (!gq) return;
+      var a = Object.assign({}, state.answers[gq.id] || {}); a[gm[2]] = t.value; state.answers[gq.id] = a;
+      var rowEl = t.closest('.sv-grid-row');
+      rowEl.classList.remove('is-missing');
+      rowEl.querySelectorAll('.sv-chip').forEach(function (l) { l.classList.toggle('is-on', l.querySelector('input').checked); });
+      clearError(t.closest('.sv-q'));
+      saveDraft();
+      hooks.onAnswer && hooks.onAnswer(gq.no, a);
+      return;
+    }
     var q = qById(t.name);
     if (!q) return;
     if (q.type === 'checkbox') {
@@ -222,6 +244,12 @@ var Survey = (function () {
         return;
       }
       var q = qById(id), v = state.answers[id];
+      if (q.type === 'grid') {               // 表形式：必須なら全部の行に答える
+        var miss = q.rows.map(function (r, i) { return i; }).filter(function (i) { return !v || !v[i]; });
+        sec.querySelectorAll('.sv-grid-row').forEach(function (el, i) { el.classList.toggle('is-missing', q.required && miss.indexOf(i) >= 0); });
+        if (q.required && miss.length) { showError(sec, 'すべての行で1つずつ選んでください（残り ' + miss.length + ' 行）。'); bad.push(sec); }
+        return;
+      }
       if (q.choices && !q.choices.length) return;
       var empty = v == null || (Array.isArray(v) ? !v.length : !String(v).trim());
       if (q.required && empty) { showError(sec, 'この質問は必須です。'); bad.push(sec); return; }
@@ -249,6 +277,12 @@ var Survey = (function () {
     state.history.forEach(function (pi) {
       questions(pi).forEach(function (q) {
         var v = state.answers[q.id];
+        if (q.type === 'grid') {               // 表形式：行ごとの entry に、選んだ列の文字を送る
+          if (!v) return;
+          q.rows.forEach(function (row, i) { if (v[i]) params.append('entry.' + q.rowEntries[i], v[i]); });
+          shown.push([q.title, q.rows.map(function (row, i) { return row + '：' + (v[i] || '―'); }).join(' ／ ')]);
+          return;
+        }
         if (v == null || v === '' || (Array.isArray(v) && !v.length)) return;
         (Array.isArray(v) ? v : [v]).forEach(function (one) { params.append('entry.' + q.entry, one); });
         shown.push([q.title, Array.isArray(v) ? v.join(' ／ ') : v]);
