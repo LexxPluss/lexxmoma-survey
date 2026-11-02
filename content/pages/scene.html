@@ -24,6 +24,14 @@
   #zoom button[data-z="reset"] { font-size: 14px; }
   #zoom button:hover { border-color: var(--main); color: var(--main); }
   #hint { position: absolute; z-index: 3; left: 48px; top: 10px; padding: 1px 8px; border-radius: 999px; background: rgba(255,255,255,.85); color: var(--sub); font-size: 11px; pointer-events: none; }
+  /* 見学の進み具合（一巡約50秒）。区切りは工場全体と①〜⑤、長さは見せる秒数 */
+  #prog { display: flex; align-items: center; gap: 8px; padding: 7px 2px 0; }
+  #prog .segs { flex: 1; display: flex; gap: 3px; }
+  #prog .seg { position: relative; height: 6px; padding: 0; border: 0; border-radius: 3px; background: #e2e7ec; overflow: hidden; cursor: pointer; }
+  #prog .seg i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--main); }
+  #prog .t { font-size: 11px; color: var(--sub); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #prog.is-hold .seg i { background: #9fb4c7; }
+  body.is-big #prog { flex: none; padding: 7px 8px 0; }
   #list { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 2px 4px; }
   #list button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text); cursor: pointer; }
   #list button[aria-pressed="true"] { background: var(--main); border-color: var(--main); color: #fff; font-weight: 700; }
@@ -39,11 +47,12 @@
 </head>
 <body>
 <div id="stage"><button type="button" class="fs" id="fs" title="大きく見る" aria-label="大きく見る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><iframe id="detail" title="使いどころの詳しい表示" hidden></iframe><span id="speed"></span><div id="zoom"><button type="button" data-z="in" title="寄る" aria-label="寄る">＋</button><button type="button" data-z="out" title="引く" aria-label="引く">－</button><button type="button" data-z="reset" title="元の向きに戻す" aria-label="元の向きに戻す">⟲</button></div><span id="hint"></span><div id="name"></div></div>
+<div id="prog"><div class="segs"></div><span class="t"></span></div>
 <div id="list"></div>
 <script src="vendor/three.min.js?r128"></script>
 <script src="moma-model.js?v=2"></script>
 <script src="supply-model.js?v=2"></script>
-<script src="scene3d.js?v=24"></script>
+<script src="scene3d.js?v=27"></script>
 <script>
   var SPEED = 3;   // 再生の速さ（実時間の何倍で見せるか）
   // 寄ったあと別の表示に切り替える使いどころ（今は無し。⑤の部品供給は、詳しい表示と同じモデルを工場の中に置いている）
@@ -88,7 +97,25 @@
       b.addEventListener('click', function () { go(k - 1); });
       $('list').appendChild(b); buttons.push(b);
     });
+    // 進み具合のバー：押すとその使いどころから見て回る
+    TOUR.forEach(function (t) {
+      var sg = document.createElement('button'); sg.type = 'button'; sg.className = 'seg'; sg.style.flex = t[1];
+      sg.title = t[0] < 0 ? '工場全体' : names[t[0]]; sg.setAttribute('aria-label', sg.title); sg.innerHTML = '<i></i>';
+      sg.addEventListener('click', function () { go(t[0]); });
+      $('prog').firstChild.appendChild(sg);
+    });
     view(-1);
+  }
+  var TOTAL = TOUR.reduce(function (a, t) { return a + t[1]; }, 0);
+  function drawProg() {
+    var done = 0;
+    [].forEach.call($('prog').querySelectorAll('.seg i'), function (fill, j) {
+      var k = j < tourAt ? 1 : j > tourAt ? 0 : Math.min(1, tourT / TOUR[j][1]);
+      fill.style.width = (k * 100).toFixed(1) + '%';
+      if (j < tourAt) done += TOUR[j][1]; else if (j === tourAt) done += Math.min(tourT, TOUR[j][1]);
+    });
+    $('prog').classList.toggle('is-hold', hold > 0);
+    $('prog').lastChild.textContent = hold > 0 ? '操作中は止まります' : Math.floor(done) + ' / ' + TOTAL + ' 秒';
   }
   function go(i) {                          // ボタンや札で選んだところから、また順に見て回る
     hold = 0;
@@ -121,6 +148,7 @@
         sim.tick(dt * SPEED, dt);
         if (hold > 0) hold -= dt;
         else if ((tourT += dt) > TOUR[tourAt][1]) next();
+        drawProg();
       }
       last = now;
     } else last = null;

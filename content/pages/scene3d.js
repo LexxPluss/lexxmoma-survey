@@ -302,7 +302,7 @@ window.FactoryScene = function (host, ui) {
       bot.act({ dur: 0.7, update: function (p) { m.open = 1 - p; } });
       bot.call(function () { m.doneAt = clock + 14; m.part.userData.finishAt = m.doneAt; });
     };
-    cells.push({ name: '研削・切削設備への部品の設置', short: '研削・切削', view: { az: 0.45, el: 0.8, w: 2.9, d: 2.1 }, at: V3(X + 0.2, 0.8, Z - 0.8), bot: bot,
+    cells.push({ name: '研削・切削設備への部品の設置', short: '研削・切削', view: { az: 0.45, el: 0.42, w: 2.9, d: 2.1 }, at: V3(X + 0.2, 0.8, Z - 0.8), bot: bot,
       tick: function () {
         ms.forEach(function (m) {
           m.door.position.y = 1.15 + m.open * 0.62;
@@ -377,7 +377,7 @@ window.FactoryScene = function (host, ui) {
         bot.queue = bot.queue.concat(q);
       });
     };
-    cells.push({ name: '板金・樹脂部品の設置', short: '板金・樹脂', view: { az: 0.5, el: 0.85, w: 3.0, d: 2.3 }, at: V3(X + 0.3, 0.8, Z + 1.2), bot: bot,
+    cells.push({ name: '板金・樹脂部品の設置', short: '板金・樹脂', view: { az: 0.5, el: 0.42, w: 3.0, d: 2.3 }, at: V3(X + 0.3, 0.8, Z + 1.2), bot: bot,
       tick: function (dt) {
         ws.forEach(function (w) {
           if (w.t < 0) { w.arm.ik(w.home, true); w.spark.intensity = 0; w.sparks.visible = false; return; }
@@ -456,7 +456,7 @@ window.FactoryScene = function (host, ui) {
         bot.queue = bot.queue.concat(q);
       });
     };
-    cells.push({ name: '検査機への部品投入と検査記録', short: '検査', view: { az: 0.35, el: 0.85, w: 2.8, d: 2.6 }, at: V3(X, 0.8, Z + 0.2), bot: bot,
+    cells.push({ name: '検査機への部品投入と検査記録', short: '検査', view: { az: 1.1, el: 0.45, w: 2.4, d: 2.2 }, at: V3(X, 0.8, Z + 0.2), bot: bot,
       tick: function (dt) {
         ms.forEach(function (m) {
           m.ringM.emissiveIntensity = 0.2;
@@ -569,7 +569,7 @@ window.FactoryScene = function (host, ui) {
       bot.turn(-Math.PI * 1.5); bot.go(X0 - 0.45, LN); bot.turn(-Math.PI * 2);
       bot.call(function () { bot.h = 0; bot.lastH = 0; });
     };
-    cells.push({ name: '完成部品のセットパック', short: 'セットパック', view: { az: 0.15, el: 1.2, w: 4.6, d: 1.6 }, at: V3(X0 + N * P / 2 - 0.4, 0.8, 3.0), bot: bot, tick: function () {} });
+    cells.push({ name: '完成部品のセットパック', short: 'セットパック', view: { az: 1.35, el: 0.45, w: 3.0, d: 1.6 }, at: V3(X0 + N * P / 2 - 0.4, 0.8, 3.0), bot: bot, tick: function () {} });
   })();
 
   /* ⑤ 生産ライン横の部品供給：詳しい表示（supply.html）と同じ棚・MoMa・作業者・動きを、そのまま工場の中に置く
