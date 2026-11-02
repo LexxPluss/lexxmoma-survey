@@ -139,10 +139,48 @@
     Survey.start({
       form: f,
       holder: $('form-holder'),
-      onPage: function (i) { Content.setSection(i === 'done' ? 'done' : i + 1); },
+      onPage: function (i) { Content.setSection(i === 'done' ? 'done' : i + 1); if (i !== 'done' && /セクション\s*2/.test(f.pages[i].title || '')) caseGuide(); },
       onQuestion: function (no) { Content.focusQuestion(no); }
     });
   }
+
+  /* ---------- セクション2：先に使いどころの例を見てから回答する案内 ---------- */
+  // 右側の3D（content/pages/scene.html）が、見せた使いどころを知らせてくる。5つとも見るまで質問を薄くしておく
+  var CASES = ['研削・切削設備への部品の設置', '板金・樹脂部品の設置', '検査機への部品投入と検査記録', '完成部品のセットパック', '生産ライン横の部品供給'];
+  var seen = {}, caseOpen = false;
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'usecase-view') return;
+    if (e.data.names && e.data.names.length) CASES = e.data.names;
+    seen[e.data.i] = true;
+    updateCases();
+  });
+  function allSeen() { return CASES.every(function (n, i) { return seen[i]; }); }
+  function caseGuide() {
+    var sv = $('form-holder').querySelector('.sv'), title = sv && sv.querySelector('.sv-page-title');
+    if (!title) return;
+    var g = document.createElement('div'); g.id = 'sv-cases'; g.className = 'sv-cases';
+    title.insertAdjacentElement('afterend', g);
+    updateCases();
+  }
+  function updateCases() {
+    var g = $('sv-cases'); if (!g) return;
+    var sv = g.closest('.sv'), done = allSeen(), open = caseOpen || done;
+    var narrow = window.matchMedia('(max-width: 960px)').matches;
+    sv.classList.toggle('sv-locked', !open);
+    var n = CASES.filter(function (c, i) { return seen[i]; }).length;
+    g.innerHTML = '<p class="sv-cases-lead"><strong>まず、工場での使いどころの例を5つご覧ください。</strong><br>' +
+      (narrow ? '下' : '右') + 'の3Dが、工場の中を順に案内します（約2分）。</p>' +
+      '<ol>' + CASES.map(function (c, i) { return '<li class="' + (seen[i] ? 'is-seen' : '') + '">' + escHtml(c) + '</li>'; }).join('') + '</ol>' +
+      '<div class="sv-cases-act">' + (narrow ? '<button type="button" class="btn btn-ghost" data-case="look">3Dを見る ↓</button>' : '') +
+      (open ? '<span class="sv-cases-ok">' + (done ? '5つとも見ました。下の質問にお答えください。' : '見た使いどころ ' + n + ' / 5') + '</span>'
+            : '<button type="button" class="btn btn-ghost" data-case="skip">先に回答する</button>') + '</div>';
+  }
+  function escHtml(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-case]'); if (!b) return;
+    if (b.getAttribute('data-case') === 'skip') { caseOpen = true; updateCases(); }
+    else { var info = $('info'); if (info) info.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
 
   /* ---------- フォームの埋め込み ---------- */
   // 回答用URL・埋め込み用URL・<iframe …> のコードのどれを貼っても使えるようにする

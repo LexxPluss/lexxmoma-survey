@@ -142,6 +142,14 @@ body.solo .newwin { display: none; }
 .intro h1 { font-size: 1.4rem; color: var(--main); margin-bottom: 6px; }
 .intro-text p { margin: 0 0 .4em; }
 .intro-text ul { margin: 0; padding-left: 1.2em; color: var(--sub); font-size: .92rem; }
+/* 上段の右の補足（「表示: 上段」のカード） */
+.intro.has-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 24px; align-items: start; }
+.intro-side { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 12px; font-size: .86rem; }
+.intro-side img { display: block; width: 100%; height: auto; margin-bottom: 6px; }
+.intro-side h2 { font-size: .95rem; margin: 0 0 4px; color: var(--text); }
+.intro-side-text p { margin: 0 0 .3em; }
+.intro-side-text ul { margin: 0; padding-left: 1.2em; }
+@media (max-width: 960px) { .intro.has-side { grid-template-columns: minmax(0, 1fr); gap: 14px; } }
 
 /* ---------- 下段：左にフォーム、右に事例 ---------- */
 .layout {
@@ -168,7 +176,6 @@ body.solo .newwin { display: none; }
 /* 右側は図を見せるので、画像は横いっぱい・縦横比はそのまま */
 .col-info .card-img { aspect-ratio: auto; background: #fff; border-top: 1px solid var(--line); }
 .col-info .card-img img { height: auto; object-fit: contain; }
-a.card-img { display: block; cursor: zoom-in; }
 .col-info .card-body { padding: 14px 16px 12px; }
 .col-info .card h3 { font-size: 1.3rem; line-height: 1.4; margin-bottom: 6px; }
 .col-info .chips { margin: 0 0 14px; }
@@ -420,3 +427,16 @@ textarea.sv-input { resize: vertical; min-height: 6em; line-height: 1.6; }
   .sv-q { margin: 12px -6px 0; padding: 12px 6px 10px; }
   .sv-nav .btn { min-width: 6.5em; }
 }
+
+/* セクション2：先に使いどころの例を見てから回答する案内 */
+.sv-cases { margin: 4px 0 18px; padding: 12px 14px; border-radius: 10px; background: var(--main-pale); border: 1px solid #cfe0f0; font-size: .9rem; }
+.sv-cases-lead { margin: 0 0 6px; }
+.sv-cases ol { margin: 0 0 8px; padding: 0; list-style: none; display: grid; gap: 3px; }
+.sv-cases li { padding-left: 1.6em; position: relative; color: var(--sub); }
+.sv-cases li::before { content: ''; position: absolute; left: 0; top: .2em; width: 1em; height: 1em; border-radius: 50%; border: 2px solid #b7c3cd; box-sizing: border-box; }
+.sv-cases li.is-seen { color: var(--text); font-weight: 700; }
+.sv-cases li.is-seen::before { border-color: var(--accent); background: var(--accent); }
+.sv-cases li.is-seen::after { content: '✓'; position: absolute; left: .22em; top: 0; color: #fff; font-size: .75em; font-weight: 800; }
+.sv-cases-act { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sv-cases-ok { color: var(--accent-d, #23864d); font-weight: 700; }
+.sv-locked .sv-q, .sv-locked .sv-nav { opacity: .4; pointer-events: none; filter: grayscale(.4); }

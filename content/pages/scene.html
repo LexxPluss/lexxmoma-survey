@@ -49,6 +49,8 @@
     if (!d.hidden) { d.hidden = true; d.removeAttribute('src'); }
     if (DETAIL[i]) detailTimer = setTimeout(function () { d.src = DETAIL[i]; d.hidden = false; }, 1500);   // 寄り終わってから
     tourT = 0;
+    // アンケートの画面へ、どの使いどころを見せたかを知らせる（全部見てから回答へ進む案内に使う）
+    try { if (i >= 0 && window.parent !== window) parent.postMessage({ type: 'usecase-view', i: i, names: names }, location.origin); } catch (e) { }
   }
   var sim = window.FactoryScene ? FactoryScene($('stage'), { view: function (i) { view(i); } }) : null;
   if (sim) {

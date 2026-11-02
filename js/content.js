@@ -5,7 +5,7 @@ var Content = (function () {
   'use strict';
 
   var CFG = window.SURVEY_CONFIG || {};
-  var KEYS = { '区分': 'kind', '時期': 'when', '画像': 'image', 'セクション': 'section', '質問': 'question', '埋め込み': 'embed', '高さ': 'embedH', '動画': 'video' };
+  var KEYS = { '区分': 'kind', '時期': 'when', '画像': 'image', 'セクション': 'section', '質問': 'question', '埋め込み': 'embed', '高さ': 'embedH', '動画': 'video', '表示': 'place' };
   var DONE = 'done'; // 送信後
 
   var state = {
@@ -108,7 +108,7 @@ var Content = (function () {
     intro.html = bodyHtml(head);
     parts.slice(1).forEach(function (chunk) {
       var lines = chunk.split('\n');
-      var card = { title: lines.shift().trim(), kind: '', when: '', image: '', section: '', question: '', embed: '', embedH: '', video: '', body: [] };
+      var card = { title: lines.shift().trim(), kind: '', when: '', image: '', section: '', question: '', embed: '', embedH: '', video: '', place: '', body: [] };
       var inHead = true;
       lines.forEach(function (line) {
         var m = line.match(/^([^:：]{1,5})[:：]\s*(.*)$/);
@@ -156,11 +156,17 @@ var Content = (function () {
     return 'tag-other';
   }
 
-  function renderIntro(intro) {
+  // 上段：一般情報。「表示: 上段」のカードは、その右に補足として出す（右側の欄には出さない）
+  function renderIntro(intro, side) {
     var box = document.getElementById('intro');
     if (!intro.title && !intro.html) { box.hidden = true; return; }
-    box.innerHTML = (intro.title ? '<h1>' + inline(intro.title) + '</h1>' : '') +
-      '<div class="intro-text">' + intro.html + '</div>';
+    box.innerHTML = '<div class="intro-main">' + (intro.title ? '<h1>' + inline(intro.title) + '</h1>' : '') +
+      '<div class="intro-text">' + intro.html + '</div></div>' +
+      side.map(function (c) {
+        return '<aside class="intro-side">' + (c.image ? '<img src="' + esc(c.image) + '" alt="' + esc(c.title) + '">' : '') +
+          '<h2>' + esc(c.title) + '</h2><div class="intro-side-text">' + c.html + '</div></aside>';
+      }).join('');
+    box.classList.toggle('has-side', side.length > 0);
     box.hidden = false;
   }
 
@@ -281,8 +287,7 @@ var Content = (function () {
         '</div><h3>' + esc(c.title) + '</h3><div class="card-text">' + c.html + '</div></div>' +
         (c.video ? videoHtml(c) : '') +
         (c.embed ? embedHtml(c) : '') +
-        (c.image && !c.embed && !c.video ? '<a class="card-img" href="' + esc(c.image) + '" target="_blank" rel="noopener" title="大きく表示">' +
-          '<img src="' + esc(c.image) + '" alt="' + esc(c.title) + '" loading="' + (i < 3 ? 'eager' : 'lazy') + '"></a>' : '') +
+        (c.image && !c.embed && !c.video ? '<div class="card-img"><img src="' + esc(c.image) + '" alt="' + esc(c.title) + '" loading="' + (i < 3 ? 'eager' : 'lazy') + '"></div>' : '') +
         (c.embed ? '<div class="card-foot">' + embedLinks(c) + '</div>' : '') + '</article>';
     }).join('') + '<p id="vision-empty" class="notice" hidden>このセクションに関連する内容はありません。</p>';
     box.querySelectorAll('.card-embed-box iframe').forEach(fitToContent);
@@ -306,8 +311,9 @@ var Content = (function () {
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
       .then(function (md) {
         var doc = parse(md, baseDir);
-        renderIntro(doc.intro);
-        render(doc.cards);
+        var top = function (c) { return c.place.indexOf('上段') >= 0; };
+        renderIntro(doc.intro, doc.cards.filter(top));
+        render(doc.cards.filter(function (c) { return !top(c); }));
       })
       .catch(function () {
         box.innerHTML = '<div class="notice"><p><strong>内容ファイルを読み込めませんでした。</strong></p>' +
