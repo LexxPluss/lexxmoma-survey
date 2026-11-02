@@ -75,7 +75,7 @@
 <script src="vendor/three.min.js?r128"></script>
 <script src="moma-model.js?v=2"></script>
 <script src="supply-model.js?v=2"></script>
-<script src="scene3d.js?v=33"></script>
+<script src="scene3d.js?v=34"></script>
 <script>
   var SPEED = 3;   // 再生の速さ（実時間の何倍で見せるか）
   // 寄ったあと別の表示に切り替える使いどころ（今は無し。⑤の部品供給は、詳しい表示と同じモデルを工場の中に置いている）
@@ -85,12 +85,12 @@
   var TOUR = [[-1, 3], [0, 7], [1, 7], [2, 7], [3, 7], [4, 7]];
   // 3D の下に出す「問い」（-1 は工場全体、0〜4 は①〜⑤）。文はここで直す
   var ASK = {
-    '-1': '同じ LexxMoMa を、工程ごとの使い方に合わせて横展開できる',
-    0: '3ゾーンは、工程設計次第で自動化できる',
-    1: '3ゾーンは、工程設計次第で自動化できる',
-    2: '検査機への投入と記録をまとめて任せれば、検査の待ちと書き写しをなくせる',
-    3: '今の棚と表示灯のままでも、ピッキングを2台で回せる',
-    4: 'シューターはロボット前提で考えると、部品収容効率をもっと高くできる'
+    '-1': 'LexxMoMaの適用工程のイメージ',
+    0: '３ゾーンは自働化できる（加工設備）',
+    1: '３ゾーンは自働化できる（溶接設備）',
+    2: '検査機への投入は自働化できる',
+    3: 'ピッキング/セットパック工程はシステム連携でさらに改善',
+    4: 'ロボット前提で考えればシューターの部品収容密度も上がる'
   };
   var $ = function (id) { return document.getElementById(id); };
   $('speed').textContent = SPEED + '倍速';
@@ -98,7 +98,7 @@
 
   function view(i) {                       // 表示が変わったとき（3D から呼ばれる）
     cur = i;
-    $('name').textContent = i < 0 ? '工場全体：5つの使いどころ' : names[i];
+    $('name').textContent = i < 0 ? '工場全体' : names[i];
     var ask = ASK[i], a = $('ask'); a.hidden = !ask; a.lastChild.textContent = ask || '';
     a.classList.remove('pop'); void a.offsetWidth; a.classList.add('pop');   // パッと出し直す
     buttons.forEach(function (b, k) { b.setAttribute('aria-pressed', k - 1 === i ? 'true' : 'false'); });

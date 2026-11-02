@@ -187,7 +187,7 @@
 
   /* ---------- セクション2：先に使いどころの例を見てから回答する案内 ---------- */
   // 右側の3D（content/pages/scene.html）が、見せた使いどころを知らせてくる。5つとも見るまで質問を薄くしておく
-  var CASES = ['研削・切削設備への部品の設置', '板金・樹脂部品の設置', '検査機への部品投入と検査記録', '完成部品のセットパック', '生産ライン横の部品供給'];
+  var CASES = ['研削・切削設備への部品設置', '板金溶接工程への部品設置', '検査機への部品投入', '部品のセットパック', '生産ライン横の部品供給'];
   var seen = {}, caseOpen = false;
   window.addEventListener('message', function (e) {
     if (e.origin !== location.origin || !e.data || e.data.type !== 'usecase-view') return;
