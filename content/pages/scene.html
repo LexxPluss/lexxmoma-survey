@@ -28,15 +28,17 @@
   #list button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text); cursor: pointer; }
   #list button[aria-pressed="true"] { background: var(--main); border-color: var(--main); color: #fff; font-weight: 700; }
   @media (max-width: 420px) { #stage { height: 270px; } #name { font-size: 15px; } #list button { font-size: 11px; } .tag3d { font-size: 9.5px; padding: 1px 6px; } }
-  /* 全画面（右下のボタン） */
+  /* 大きく見る（右下のボタン）：全画面ではなく、アンケートのタブの中いっぱいに広げる */
   .fs { position: absolute; z-index: 4; right: 8px; bottom: 8px; width: 34px; height: 34px; border: 0; border-radius: 8px; background: rgba(16, 24, 32, .55); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .fs:hover { background: rgba(16, 24, 32, .8); }
   .fs svg { width: 20px; height: 20px; }
-  :fullscreen #stage, :fullscreen#stage, :fullscreen #stage3d, :fullscreen#stage3d { height: 100% !important; }
+  body.is-big { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  body.is-big #stage { flex: 1; height: auto; }
+  body.is-big #list { flex: none; padding: 8px 8px 10px; }
 </style>
 </head>
 <body>
-<div id="stage"><button type="button" class="fs" id="fs" title="全画面で見る" aria-label="全画面で見る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><iframe id="detail" title="使いどころの詳しい表示" hidden></iframe><span id="speed"></span><div id="zoom"><button type="button" data-z="in" title="寄る" aria-label="寄る">＋</button><button type="button" data-z="out" title="引く" aria-label="引く">－</button><button type="button" data-z="reset" title="元の向きに戻す" aria-label="元の向きに戻す">⟲</button></div><span id="hint"></span><div id="name"></div></div>
+<div id="stage"><button type="button" class="fs" id="fs" title="大きく見る" aria-label="大きく見る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><iframe id="detail" title="使いどころの詳しい表示" hidden></iframe><span id="speed"></span><div id="zoom"><button type="button" data-z="in" title="寄る" aria-label="寄る">＋</button><button type="button" data-z="out" title="引く" aria-label="引く">－</button><button type="button" data-z="reset" title="元の向きに戻す" aria-label="元の向きに戻す">⟲</button></div><span id="hint"></span><div id="name"></div></div>
 <div id="list"></div>
 <script src="vendor/three.min.js?r128"></script>
 <script src="moma-model.js?v=2"></script>
@@ -124,19 +126,37 @@
   }
   if (sim && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) requestAnimationFrame(frame);
 
-  // 全画面：3D の枠だけを画面いっぱいに（もう一度押すと戻る）
+  // 大きく見る：埋め込みの枠を、アンケートのタブの中いっぱいに広げる（ブラウザの全画面にはしない）。もう一度押すか Esc で戻る
   (function () {
-    var b = document.getElementById('fs'), box = b.parentNode;
-    var on = function () { return document.fullscreenElement || document.webkitFullscreenElement; };
-    if (!(box.requestFullscreen || box.webkitRequestFullscreen)) { b.hidden = true; return; }
-    b.addEventListener('click', function () {
-      if (on()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-      else (box.requestFullscreen || box.webkitRequestFullscreen).call(box);
-    });
-    var sync = function () { var f = !!on(), t = f ? '全画面を終わる' : '全画面で見る'; b.title = t; b.setAttribute('aria-label', t);
-      b.innerHTML = f ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>'
-                      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>'; };
-    document.addEventListener('fullscreenchange', sync); document.addEventListener('webkitfullscreenchange', sync);
+    var b = document.getElementById('fs'), big = false, saved = [];
+    var frame = null, top = window;
+    try { frame = window.frameElement; if (frame) top = window.parent; } catch (e) { frame = null; }
+    var ICON_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+        ICON_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+    function keep(el, css) { saved.push([el, el.style.cssText]); for (var k in css) el.style.setProperty(k, css[k], 'important'); }
+    function fit() { if (big && frame) frame.style.setProperty('height', top.innerHeight + 'px', 'important'); }
+    function set(on) {
+      if (on === big) return;
+      big = on;
+      if (on) {
+        if (frame) {
+          keep(frame, { position: 'fixed', left: '0', top: '0', width: '100%', height: top.innerHeight + 'px', margin: '0', 'max-width': 'none', 'z-index': '2147483000', background: '#fff' });
+          // 親の画面で、枠より手前に出てしまう重なり（貼り付いた上部など）を越えられるよう、枠の外側の箱も一番手前へ
+          for (var el = frame.parentElement; el && el !== top.document.body; el = el.parentElement)
+            if (top.getComputedStyle(el).position !== 'static') keep(el, { 'z-index': '2147483000' });
+          keep(top.document.documentElement, { overflow: 'hidden' });
+        }
+      } else {
+        while (saved.length) { var x = saved.pop(); x[0].style.cssText = x[1]; }
+      }
+      document.body.classList.toggle('is-big', on);
+      var t = on ? '元の大きさに戻す' : '大きく見る';
+      b.title = t; b.setAttribute('aria-label', t); b.innerHTML = on ? ICON_CLOSE : ICON_OPEN;
+    }
+    b.addEventListener('click', function () { set(!big); });
+    var esc = function (e) { if (e.key === 'Escape') set(false); };
+    document.addEventListener('keydown', esc);
+    if (frame) { top.document.addEventListener('keydown', esc); top.addEventListener('resize', fit); }
   })();
 </script>
 </body>
