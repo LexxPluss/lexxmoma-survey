@@ -25,6 +25,12 @@
   #zoom button:hover { border-color: var(--main); color: var(--main); }
   #hint { position: absolute; z-index: 3; left: 48px; top: 10px; padding: 1px 8px; border-radius: 999px; background: rgba(255,255,255,.85); color: var(--sub); font-size: 11px; pointer-events: none; }
   /* 見学の進み具合（一巡約50秒）。区切りは工場全体と①〜⑤、長さは見せる秒数 */
+  /* 3D の下の「問い」：その工程を自動化するときに考えたいこと（使いどころごとに変わる） */
+  #ask { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; padding: 8px 10px; border-left: 4px solid var(--accent, #3EB370); border-radius: 6px; background: #f2f9f4; }
+  #ask b { flex: none; padding: 1px 8px; border-radius: 999px; background: #3EB370; color: #fff; font-size: 11px; line-height: 1.6; }
+  #ask span { font-size: 14px; font-weight: 700; line-height: 1.5; color: var(--text); }
+  #ask[hidden] { display: none; }
+  body.is-big #ask { flex: none; margin: 8px 8px 0; }
   #prog { display: flex; align-items: center; gap: 8px; padding: 7px 2px 0; }
   #prog .segs { flex: 1; display: flex; gap: 3px; }
   #prog .seg { position: relative; height: 6px; padding: 0; border: 0; border-radius: 3px; background: #e2e7ec; overflow: hidden; cursor: pointer; }
@@ -47,6 +53,7 @@
 </head>
 <body>
 <div id="stage"><button type="button" class="fs" id="fs" title="大きく見る" aria-label="大きく見る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><iframe id="detail" title="使いどころの詳しい表示" hidden></iframe><span id="speed"></span><div id="zoom"><button type="button" data-z="in" title="寄る" aria-label="寄る">＋</button><button type="button" data-z="out" title="引く" aria-label="引く">－</button><button type="button" data-z="reset" title="元の向きに戻す" aria-label="元の向きに戻す">⟲</button></div><span id="hint"></span><div id="name"></div></div>
+<div id="ask" hidden><b>問い</b><span></span></div>
 <div id="prog"><div class="segs"></div><span class="t"></span></div>
 <div id="list"></div>
 <script src="vendor/three.min.js?r128"></script>
@@ -60,6 +67,15 @@
   // 自動で見て回る順番と、それぞれを見せる秒数（-1 は工場全体）。1つの使いどころは約9秒、一巡で約50秒
   // 詳しい表示は1回分が終わるか、秒数が来たら次へ
   var TOUR = [[-1, 4], [0, 9], [1, 9], [2, 9], [3, 9], [4, 9]];
+  // 3D の下に出す「問い」（-1 は工場全体、0〜4 は①〜⑤）。文はここで直す
+  var ASK = {
+    '-1': '同じ LexxMoMa を、工程ごとの使い方に合わせて横展開できる',
+    0: '3ゾーンは、工程設計次第で自動化できる',
+    1: '3ゾーンは、工程設計次第で自動化できる',
+    2: '検査機への投入と記録をまとめて任せれば、検査の待ちと書き写しをなくせる',
+    3: '今の棚と表示灯のままでも、ピッキングを2台で回せる',
+    4: 'シューターはロボット前提で考えると、部品収容効率をもっと高くできる'
+  };
   var $ = function (id) { return document.getElementById(id); };
   $('speed').textContent = SPEED + '倍速';
   var buttons = [], names = [], cur = -2, tourAt = 0, tourT = 0, detailTimer = null;
@@ -67,6 +83,7 @@
   function view(i) {                       // 表示が変わったとき（3D から呼ばれる）
     cur = i;
     $('name').textContent = i < 0 ? '工場全体：5つの使いどころ' : names[i];
+    var ask = ASK[i]; $('ask').hidden = !ask; $('ask').lastChild.textContent = ask || '';
     buttons.forEach(function (b, k) { b.setAttribute('aria-pressed', k - 1 === i ? 'true' : 'false'); });
     var d = $('detail');
     clearTimeout(detailTimer);
