@@ -170,7 +170,7 @@ body.solo .newwin { display: none; }
 .col-info .card-img img { height: auto; object-fit: contain; }
 a.card-img { display: block; cursor: zoom-in; }
 .col-info .card-body { padding: 14px 16px 12px; }
-.col-info .card h3 { font-size: 1rem; margin-bottom: 4px; }
+.col-info .card h3 { font-size: 1.3rem; line-height: 1.4; margin-bottom: 6px; }
 .col-info .chips { margin: 0 0 14px; }
 .form-holder .lead { font-size: .85rem; margin: 0 0 8px; }
 
