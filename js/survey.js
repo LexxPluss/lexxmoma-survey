@@ -193,6 +193,7 @@ var Survey = (function () {
     }
     clearError(t.closest('.sv-q'));
     saveDraft();
+    hooks.onAnswer && hooks.onAnswer(q.no, state.answers[q.id]);   // 右側の表示に知らせる（Q4-1 の工場の早見表など）
     // 分岐で行き先が変わったら、ボタンの文字（次へ／送信する）も合わせる
     var btn = holder.querySelector('[data-act=next]');
     if (btn) btn.textContent = nextTarget(state.page) === 'submit' ? '送信する' : '次へ';
@@ -364,5 +365,10 @@ var Survey = (function () {
     render(false);
   }
 
-  return { start: start, payload: function () { return payload(); }, state: function () { return state; } };
+  function answerOf(no) {               // 質問番号（Q4-1 など）で今の回答を返す
+    var q = allQuestions().filter(function (x) { return x.no === no; })[0];
+    return q ? state.answers[q.id] : undefined;
+  }
+
+  return { start: start, payload: function () { return payload(); }, state: function () { return state; }, answerOf: answerOf };
 })();

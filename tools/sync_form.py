@@ -164,6 +164,18 @@ def main():
             stale = sorted({r for r in re.findall(r'Q\d+(?:-\d+)?', text) if r not in nos})
             if stale:
                 WARN.append(f'{i.get("no", "")} の説明に、今は無い番号があります：{"・".join(stale)}')
+    # Q4-1 の工場の選択肢と、右側の早見表（content/data/plants.json）の工場名がそろっているか
+    plants_file = os.path.join(ROOT, 'content', 'data', 'plants.json')
+    q41 = [i for p in form['pages'] for i in p['items'] if i['kind'] == 'question' and i.get('no') == 'Q4-1']
+    if q41 and os.path.exists(plants_file):
+        names = [p['name'] for p in json.load(open(plants_file, encoding='utf-8'))['plants']]
+        offered = [c['value'].split('（')[0].strip() for c in q41[0].get('choices', []) if c['value'].split('（')[0].strip().endswith('工場')]
+        for n in offered:
+            if n not in names:
+                WARN.append(f'Q4-1 の「{n}」が早見表（plants.json）にありません')
+        for n in names:
+            if n not in offered:
+                WARN.append(f'早見表（plants.json）の「{n}」が Q4-1 の選択肢にありません')
     for w in WARN:
         print('::warning::' + w)
     form['formUrl'] = url

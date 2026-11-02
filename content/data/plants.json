@@ -1,0 +1,154 @@
+{
+  "_note": "Q4-1 の右側の早見表（content/pages/plants.html）の内容。トヨタ自動車 公式サイトの記載をそのまま写す。公式で確認できない項目は null（画面では「公式情報なし」）。工場名はフォームの選択肢の「（」より前と一致させる（tools/sync_form.py が照合）。",
+  "checked": "2026-11-02",
+  "sources": {
+    "products": {
+      "title": "トヨタ自動車 公式サイト「統括会社・生産拠点（国内）」",
+      "url": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+      "asOf": "2026年8月4日時点"
+    },
+    "location": {
+      "title": "トヨタ自動車 公式サイト「国内生産工場（所在地・アクセス）」",
+      "url": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html"
+    }
+  },
+  "fields": {
+    "city": "所在地",
+    "products": "主な生産品目",
+    "completed": "完成"
+  },
+  "plants": [
+    {
+      "name": "本社工場",
+      "city": "愛知県豊田市",
+      "products": "鍛造部品、ハイブリッド用部品、FC部品、シャシー部品",
+      "completed": 1938,
+      "sources": {
+        "city": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html",
+        "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+        "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
+      },
+      "checked": "2026-11-02"
+    },
+    {
+      "name": "元町工場",
+      "city": "愛知県豊田市",
+      "products": "クラウン（セダン）、クラウン（クロスオーバー）、MIRAI、センチュリー（セダン）、bZ4X、GRヤリス、GRカローラ、LC、RZ、LBX",
+      "completed": 1959,
+      "sources": {
+        "city": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html",
+        "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+        "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
+      },
+      "checked": "2026-11-02"
+    },
+    {
+      "name": "上郷工場",
+      "city": "愛知県豊田市",
+      "products": "エンジン",
+      "completed": 1965,
+      "sources": {
+        "city": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html",
+        "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+        "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
+      },
+      "checked": "2026-11-02"
+    },
+    {
+      "name": "高岡工場",
+      "city": "愛知県豊田市",
+      "products": "RAV4、ハリアー、bZ4X、TOYOTA C-HR+",
+      "completed": 1966,
+      "sources": {
+        "city": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html",
+        "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+        "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
+      },
+      "checked": "2026-11-02"
+    },
+    {
+      "name": "三好工場",
+      "city": "愛知県みよし市",
+      "products": "駆動関係部品、鍛造部品、エンジン関係部品",
+      "completed": 1968,
+      "sources": {
+        "city": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html",
+        "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+        "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
+      },
+      "checked": "2026-11-02"
+    },
+    {
+      "name": "堤工場",
+      "city": "愛知県豊田市",
+      "products": "クラウン（クロスオーバー）、クラウン（スポーツ）、クラウン（エステート）、カローラ、カローラ ツーリング、カローラ スポーツ、プリウス、カムリ",
+      "completed": 1970,
+      "sources": {
+        "city": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html",
+        "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+        "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
+      },
+      "checked": "2026-11-02"
+    },
+    {
+      "name": "明知工場",
+      "city": "愛知県みよし市",
+      "products": "駆動関係部品、鋳造部品",
+      "completed": 1973,
+      "sources": {
+        "city": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html",
+        "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+        "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
+      },
+      "checked": "2026-11-02"
+    },
+    {
+      "name": "下山工場",
+      "city": "愛知県みよし市",
+      "products": "エンジン、FCタンク",
+      "completed": 1975,
+      "sources": {
+        "city": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html",
+        "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+        "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
+      },
+      "checked": "2026-11-02"
+    },
+    {
+      "name": "衣浦工場",
+      "city": "愛知県碧南市",
+      "products": "駆動関係部品",
+      "completed": 1978,
+      "sources": {
+        "city": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html",
+        "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+        "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
+      },
+      "checked": "2026-11-02"
+    },
+    {
+      "name": "田原工場",
+      "city": "愛知県田原市",
+      "products": "ランドクルーザー250、4Runner、GX、LS、IS、LM、センチュリー、エンジン",
+      "completed": 1979,
+      "sources": {
+        "city": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html",
+        "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+        "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
+      },
+      "checked": "2026-11-02"
+    },
+    {
+      "name": "貞宝工場",
+      "city": "愛知県豊田市",
+      "products": "機械設備、樹脂型、鋳造型、鋳鍛型",
+      "completed": 1986,
+      "sources": {
+        "city": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/manufacturing-jp.html",
+        "products": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html",
+        "completed": "https://global.toyota/jp/company/profile/facilities/manufacturing-worldwide/japan.html"
+      },
+      "checked": "2026-11-02"
+    }
+  ]
+}

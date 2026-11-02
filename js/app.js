@@ -140,9 +140,21 @@
       form: f,
       holder: $('form-holder'),
       onPage: function (i) { Content.setSection(i === 'done' ? 'done' : i + 1); Content.compactIntro(i !== 0); if (i !== 'done' && /セクション\s*2/.test(f.pages[i].title || '')) caseGuide(); },
-      onQuestion: function (no) { Content.focusQuestion(no); }
+      onQuestion: function (no) { Content.focusQuestion(no); },
+      onAnswer: function (no, v) { tellPanels(no, v); }
     });
   }
+
+  /* ---------- 右側の埋め込みページへ回答を知らせる（Q4-1 の工場の早見表で、チェックした工場に色を付ける） ---------- */
+  function tellPanels(no, v) {
+    document.querySelectorAll('#vision-cards iframe').forEach(function (f) {
+      try { f.contentWindow.postMessage({ type: 'survey-answer', no: no, values: [].concat(v || []) }, location.origin); } catch (e) { }
+    });
+  }
+  window.addEventListener('message', function (e) {   // 埋め込みページが読み込まれたとき、今の回答を聞いてくる
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'survey-ask' || !window.Survey || !Survey.answerOf) return;
+    tellPanels(e.data.no, Survey.answerOf(e.data.no));
+  });
 
   /* ---------- セクション2：先に使いどころの例を見てから回答する案内 ---------- */
   // 右側の3D（content/pages/scene.html）が、見せた使いどころを知らせてくる。5つとも見るまで質問を薄くしておく
