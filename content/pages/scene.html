@@ -42,11 +42,12 @@
 <div id="list"></div>
 <script src="vendor/three.min.js?r128"></script>
 <script src="moma-model.js?v=2"></script>
-<script src="scene3d.js?v=20"></script>
+<script src="supply-model.js?v=1"></script>
+<script src="scene3d.js?v=22"></script>
 <script>
   var SPEED = 3;   // 再生の速さ（実時間の何倍で見せるか）
-  // 使いどころの詳しい表示（社内の検討用ビューアから作った表示）。寄ったあと、その表示に切り替える
-  var DETAIL = { 4: 'supply.html?v=4&speed=' + SPEED };
+  // 寄ったあと別の表示に切り替える使いどころ（今は無し。⑤の部品供給は、詳しい表示と同じモデルを工場の中に置いている）
+  var DETAIL = {};
   // 自動で見て回る順番と、それぞれを見せる秒数（-1 は工場全体）。一巡で約45秒に収める
   // 詳しい表示は1回分が終わるか、秒数が来たら次へ
   var TOUR = [[-1, 4], [0, 7], [1, 7], [2, 7], [3, 8], [4, 12]];

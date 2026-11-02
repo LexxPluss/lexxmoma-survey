@@ -572,75 +572,25 @@ window.FactoryScene = function (host, ui) {
     cells.push({ name: '完成部品のセットパック', short: 'セットパック', view: { az: 0.15, el: 1.2, w: 4.6, d: 1.6 }, at: V3(X0 + N * P / 2 - 0.4, 0.8, 3.0), bot: bot, tick: function () {} });
   })();
 
-  /* ⑤ 生産ライン横の部品供給：組立ラインの横の棚へ、自分の通路を走って箱を入れ、空箱を回収する */
+  /* ⑤ 生産ライン横の部品供給：詳しい表示（supply.html）と同じ棚・MoMa・作業者・動きを、そのまま工場の中に置く
+     （supply-model.js。別の簡易モデルにすると、寄ったときに見え方がつながらないため） */
   (function () {
-    var X = 9.6, RZ = -5.1, SUP = 0.96, RET = 1.62;
-    plane(2, 15.5, -6.9, -5.65, C.green, 0.12);                                            // 作業者の域
+    var X = 9.6, LINE_S = -6.95;                                                          // 棚の列の中心と、組立ラインのコンベヤの南の端
     box(scene, 14, 0.25, 2.1, '#cfd6dc', 8.5, 0.125, -8.0);                                // 組立ラインのコンベヤ
     for (var k = 0; k < 14; k++) box(scene, 0.04, 0.02, 2.1, '#b8c2ca', 2 + k, 0.26, -8.0);
     var cars = [3.5, 9.2, 14.9].map(function (x) { var c = car('#f4f5f6'); c.position.set(x, 0.25, -8.0); scene.add(c); return c; });
     var lamps = andon(8.5, -8.0, 4);
-    aisle(X - 2.2, X + 2.4, -4.35, -2.9);
-    var g = new THREE.Group(); g.position.set(X, 0, RZ); scene.add(g);                    // 縦型の棚（4列・高さを使う。shooter-concept.html の本案に寄せた形）
-    pipeRack(g, 1.56, 1.08, 1.86);
-    var cols = [-0.585, -0.195, 0.195, 0.585], tones = ['#2F6FB3', '#C2577F', '#E8A33D', '#8C6BB1', '#3C9A9B', '#A67C52'];
-    [0.15, 0.45, SUP, 1.28, RET].forEach(function (y, li) {
-      [-1, 1].forEach(function (s) { box(g, 1.56, 0.03, 0.03, C.frame, 0, y - 0.04, s * 0.54); });
-      cols.forEach(function (cx, ci) {
-        box(g, 0.33, 0.02, 1.08, '#c5cdd3', cx, y - 0.03, 0);
-        if (y === RET || (ci === 1 && y === SUP)) return;          // 返却段と、2列目の取り出し段は動かす
-        [-0.27, 0.27].forEach(function (dz) { var c = crate(tones[(li * 4 + ci) % tones.length], { x: 0.335, y: 0.149, z: 0.5 }); c.position.set(cx, y + 0.075, dz); g.add(c); });
-      });
-    });
-    shade(g);
-    var w = worker(X - 0.2, -6.15, 0);
-    var LX = X + cols[1];
-    var laneZ = function (lane, i) { return lane === 'sup' ? RZ - 0.27 + i * 0.54 : RZ + 0.27 - i * 0.54; };
-    var BX = { x: 0.335, y: 0.149, z: 0.5 };
-    var sup = [], ret = [], anim = null, timer = 5;
-    var c0 = crate(C.full, BX); scene.add(c0); sup.push(c0); c0.position.set(LX, SUP + 0.075, laneZ('sup', 0));
-    // 在庫の台車（東）と空箱の置き台（西）は、通路から南へ分かれた枝の先（L字に曲がって取りに行く）
-    var BRX = X + 2.0, BRZ = -1.95;
-    aisle(BRX - 0.55, BRX + 0.55, -2.9, -1.4);
-    var stockAt = V3(BRX + 0.95, 0.86, BRZ);
-    cart(BRX + 0.95, BRZ, Math.PI / 2);
-    var stock = crate(C.full, BX); scene.add(stock); stock.position.copy(stockAt);
-    cart(BRX - 0.95, BRZ, Math.PI / 2); var dropped = [];
-    var bot = Bot(LX, -3.62, 0);
-    bot.script = function () {
-      bot.route(BRX, BRZ, -Math.PI / 2);
-      bot.pick(function () { return stock; }, function () { return stockAt.clone(); }, function () { stock = crate(C.full, BX); scene.add(stock); stock.position.copy(stockAt); });
-      bot.call(function () {                // 返却段に空箱があれば、新しい箱を入れたあと回収して枝の先の置き台へ
-        var q = bot.queue; bot.queue = [];
-        bot.route(LX, -3.62, 0);
-        bot.until(function () { return sup.length < 2; });
-        bot.place(function () { return V3(LX, SUP + 0.075, laneZ('sup', 1)); }, function (o) { sup.push(o); });
-        bot.call(function () {
-          var e = ret[0];
-          if (!e || Math.abs(e.position.z - laneZ('ret', 0)) > 0.02) return;
-          var q2 = bot.queue; bot.queue = [];
-          bot.pick(function () { return ret[0]; }, function () { return ret[0].position.clone(); }, function () { ret.shift(); });
-          bot.route(BRX, BRZ, -Math.PI / 2);
-          bot.place(function () { return V3(BRX - 0.95, 0.87, BRZ + (dropped.length % 2 ? 0.2 : -0.2)); }, function (o) { dropped.push(o); if (dropped.length > 2) scene.remove(dropped.shift()); });
-          bot.queue = bot.queue.concat(q2);
-        });
-        bot.queue = bot.queue.concat(q);
-      });
-    };
-    cells.push({ name: '生産ライン横の部品供給', short: 'ライン横の部品供給', view: { az: 0.35, el: 0.75, w: 2.6, d: 2.2 }, at: V3(X + 0.6, 0.9, -4.0), bot: bot,
+    var g = new THREE.Group(); scene.add(g);
+    var m = window.SupplyModel ? window.SupplyModel(g) : null;
+    var Z0 = m ? LINE_S + m.area.lz : -5.45;                                               // 人の作業域の北の端をコンベヤにそろえる
+    g.position.set(X, 0, Z0);
+    var at = m ? V3(X + m.center.x, m.center.y - 0.45, Z0 + m.center.z) : V3(X, 0.65, -4.6);
+    var bot = { step: function () {}, pose: function () {} };                             // MoMa は supply-model.js の中で動く
+    cells.push({ name: '生産ライン横の部品供給', short: 'ライン横の部品供給', view: { az: 1.36, el: 0.4, w: 1.2, d: 1.5, same: m ? { span: m.span } : null }, at: at, bot: bot,
       tick: function (dt) {
         cars.forEach(function (c) { c.position.x += dt * 0.22; if (c.position.x > 16.6) c.position.x -= 17.1; c.visible = c.position.x > 0.2; });
-        sup.forEach(function (c, i) { c.position.z += clamp(laneZ('sup', i) - c.position.z, -dt * 0.6, dt * 0.6); });
-        ret.forEach(function (c, i) { c.position.z += clamp(laneZ('ret', i) - c.position.z, -dt * 0.6, dt * 0.6); });
-        if (anim) {                        // 作業者：先頭の箱を使い切ったら、空箱を上の返却段へ
-          anim.t += dt; var p = Math.min(1, anim.t / 1.4);
-          w.reach(Math.sin(p * Math.PI)); anim.c.position.lerpVectors(anim.a, anim.b, ease(p));
-          if (p >= 1) { ret.push(anim.c); anim = null; timer = 8 + Math.random() * 3; }
-        } else if ((timer -= dt) <= 0 && sup.length > 1 && Math.abs(sup[0].position.z - laneZ('sup', 0)) < 0.02 && ret.length < 2) {
-          var c = sup.shift(); c.userData.setColor(C.empty);
-          anim = { t: 0, c: c, a: c.position.clone(), b: V3(LX, RET + 0.075, laneZ('ret', 1)) };
-        } else w.reach(0);
-        lamps.forEach(function (m, i) { m.emissiveIntensity = (i + Math.floor(clock / 2)) % 8 === 0 ? 1 : 0.5; });
+        if (m) m.tick(dt);
+        lamps.forEach(function (l, i) { l.emissiveIntensity = (i + Math.floor(clock / 2)) % 8 === 0 ? 1 : 0.5; });
       } });
   })();
 
@@ -657,7 +607,7 @@ window.FactoryScene = function (host, ui) {
   [-13.6, 14.4].forEach(function (x) { [-9.0, 6.6].forEach(function (z) { [0, 1.2].forEach(function (y) { ALL.pts.push(V3(x, y, z)); }); }); });
   function zoneView(c) {   // c.view：見る向き（az）・高さ（el）・入れる範囲（w×d）。side は横から
     var o = c.view || (c.side ? { az: 1.15, el: 0.5, w: 1.7, d: 1.7 } : { az: 0.35, el: 0.6, w: 1.7, d: 1.7 });
-    var v = { target: c.at.clone(), el: o.el, az: o.az, pts: [] };
+    var v = { target: c.at.clone(), el: o.el, az: o.az, pts: [], same: o.same };
     [-o.w, o.w].forEach(function (x) { [-o.d, o.d].forEach(function (z) { [-0.8, 1.3].forEach(function (y) { v.pts.push(c.at.clone().add(V3(x, y, z))); }); }); }); return v; }
   var views = cells.map(zoneView);
   function camPos(v, dist) { var d = V3(Math.sin(v.az) * Math.cos(v.el), Math.sin(v.el), Math.cos(v.az) * Math.cos(v.el)); return v.target.clone().addScaledVector(d, dist); }
@@ -700,12 +650,18 @@ window.FactoryScene = function (host, ui) {
       t.style.transform = 'translate(' + Math.round(px - half) + 'px,' + Math.round((1 - q.y) / 2 * h) + 'px) translateY(-100%)';
     });
   }
+  // 詳しい表示（supply.html）の「横から」と同じ見え方にする（同じ計算。画角の違い 38° と 32° の分だけ離す）
+  function sameView(v) {
+    var a = camera.aspect, f = 1.1 * v.same.span * (a < 1 ? 1.7 : a < 1.3 ? 1.25 : 1);
+    var x = 6.0 * f, y = 2.7, z = 1.3 * f, r = Math.sqrt(x * x + y * y + z * z);
+    v.az = Math.atan2(x, z); v.el = Math.asin(y / r); v.dist = r * Math.tan(19 * Math.PI / 180) / Math.tan(16 * Math.PI / 180);
+  }
   function resize() {
     var w = host.clientWidth || 300, h = host.clientHeight || 200;
     renderer.setSize(w, h, false);
     renderer.domElement.style.width = '100%'; renderer.domElement.style.height = '100%';
     camera.aspect = w / h; camera.updateProjectionMatrix();
-    ALL.dist = fitDist(ALL); views.forEach(function (v) { v.dist = fitDist(v); });
+    ALL.dist = fitDist(ALL); views.forEach(function (v) { if (v.same) sameView(v); else v.dist = fitDist(v); });
   }
   /* 操作：左ドラッグで回す・傾ける／右ドラッグか Shift＋ドラッグでずらす／一度押したあとホイールで寄る（ページのスクロールを妨げない）／
      スマホは横のスワイプで回す（縦はページのスクロール）。＋・－・元に戻すは zoom()・reset() から */
