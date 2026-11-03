@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LexxMoMa アンケート</title>
-  <link rel="stylesheet" href="css/style.css?v=45">
+  <link rel="stylesheet" href="css/style.css?v=46">
 </head>
 <body>
   <!-- 合言葉の入力画面 -->
@@ -12,7 +12,7 @@
     <form id="gate-form" class="gate-box" autocomplete="off">
       <p class="brand">LexxMoMa</p>
       <h1>アンケートのご案内</h1>
-      <p class="gate-note">ご案内した合言葉を入力してください。</p>
+      <p class="gate-note">ご案内した合言葉を入力してください。<br><span class="gate-hint">合言葉は貴社名の英語名です</span></p>
       <input id="gate-input" type="password" placeholder="合言葉" aria-label="合言葉" required>
       <button type="submit" class="btn btn-primary">入る</button>
       <p id="gate-msg" class="gate-msg" role="alert"></p>
@@ -78,14 +78,14 @@
     </footer>
   </div>
 
-  <script src="js/config.js?v=45"></script>
-  <script src="js/demo-data.js?v=45"></script>
+  <script src="js/config.js?v=46"></script>
+  <script src="js/demo-data.js?v=46"></script>
   <!-- 質問データは Google フォームから自動で作り直されるので、毎回新しいものを読む（1分ごとに名前を変えて、古いものを使わない） -->
   <script>document.write('<script src="js/questions.js?t=' + Math.floor(Date.now() / 60000) + '"><\/script>');</script>
-  <script src="js/survey.js?v=45"></script>
-  <script src="js/content.js?v=45"></script>
-  <script src="js/results.js?v=45"></script>
-  <script src="js/csv.js?v=45"></script>
-  <script src="js/app.js?v=45"></script>
+  <script src="js/survey.js?v=46"></script>
+  <script src="js/content.js?v=46"></script>
+  <script src="js/results.js?v=46"></script>
+  <script src="js/csv.js?v=46"></script>
+  <script src="js/app.js?v=46"></script>
 </body>
 </html>
