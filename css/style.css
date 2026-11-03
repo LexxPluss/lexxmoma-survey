@@ -61,7 +61,7 @@ a { color: var(--main); }
 }
 .gate-box {
   width: 100%;
-  max-width: 460px;
+  max-width: 680px;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -71,7 +71,7 @@ a { color: var(--main); }
 }
 .gate-box h1 { font-size: 1.3rem; margin: 4px 0 8px; }
 /* 合言葉の窓のごあいさつ（見学のお礼・できるまで・お願い） */
-.gate-greet { margin: 12px 0 18px; padding: 14px 16px; border-radius: 10px; background: var(--main-pale, #e8f1f9); text-align: left; font-size: .9rem; line-height: 1.7; }
+.gate-greet { margin: 12px 0 18px; padding: 16px 20px; border-radius: 10px; background: var(--main-pale, #e8f1f9); text-align: left; font-size: .9rem; line-height: 1.7; }
 .gate-greet p { margin: 0 0 .6em; }
 .gate-greet p:last-child { margin-bottom: 0; }
 .gate-greet p:first-child { font-weight: 700; color: var(--main); }
@@ -88,6 +88,7 @@ a { color: var(--main); }
   text-align: center;
 }
 .gate-box .btn { width: 100%; padding: .7em; font-size: 1rem; }
+.gate-box input, .gate-box .btn { display: block; max-width: 380px; margin-left: auto; margin-right: auto; }   /* 窓を広げても、入力欄とボタンは元の幅 */
 .gate-msg { min-height: 1.5em; margin: 12px 0 0; font-size: .85rem; color: #c0392b; }
 
 .brand { margin: 0; font-weight: 700; color: var(--main); letter-spacing: .04em; }
