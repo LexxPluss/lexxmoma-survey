@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LexxMoMa アンケート</title>
-  <link rel="stylesheet" href="css/style.css?v=46">
+  <link rel="stylesheet" href="css/style.css?v=47">
 </head>
 <body>
   <!-- 合言葉の入力画面 -->
@@ -12,6 +12,11 @@
     <form id="gate-form" class="gate-box" autocomplete="off">
       <p class="brand">LexxMoMa</p>
       <h1>アンケートのご案内</h1>
+      <div class="gate-greet">
+        <p>本日は LexxMoMa の実機見学にお越しいただき、誠にありがとうございました。</p>
+        <p>LexxMoMa R1 は、走行する台車と協働ロボットのアームを組み合わせた、移動して作業するロボット（モバイルマニピュレータ）です。トヨタ車体・LexxPluss・パートナー企業で、約2年かけて共同開発しました。</p>
+        <p>これから、より多くの工程・工場で使っていただけるよう、現場の皆さまのご意見をお聞かせください。</p>
+      </div>
       <p class="gate-note">ご案内した合言葉を入力してください。<br><span class="gate-hint">合言葉は貴社名の英語名です</span></p>
       <input id="gate-input" type="password" placeholder="合言葉" aria-label="合言葉" required>
       <button type="submit" class="btn btn-primary">入る</button>
@@ -78,14 +83,14 @@
     </footer>
   </div>
 
-  <script src="js/config.js?v=46"></script>
-  <script src="js/demo-data.js?v=46"></script>
+  <script src="js/config.js?v=47"></script>
+  <script src="js/demo-data.js?v=47"></script>
   <!-- 質問データは Google フォームから自動で作り直されるので、毎回新しいものを読む（1分ごとに名前を変えて、古いものを使わない） -->
   <script>document.write('<script src="js/questions.js?t=' + Math.floor(Date.now() / 60000) + '"><\/script>');</script>
-  <script src="js/survey.js?v=46"></script>
-  <script src="js/content.js?v=46"></script>
-  <script src="js/results.js?v=46"></script>
-  <script src="js/csv.js?v=46"></script>
-  <script src="js/app.js?v=46"></script>
+  <script src="js/survey.js?v=47"></script>
+  <script src="js/content.js?v=47"></script>
+  <script src="js/results.js?v=47"></script>
+  <script src="js/csv.js?v=47"></script>
+  <script src="js/app.js?v=47"></script>
 </body>
 </html>
