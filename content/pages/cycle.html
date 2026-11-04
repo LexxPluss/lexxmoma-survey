@@ -191,7 +191,7 @@
   }
 
   var raf = null;
-  var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var still = false;   // Windows の「アニメーション効果」がオフ（＝動きを減らす設定）の会社のパソコンでも動かす。動き自体が見せたい内容のため
   function play() {
     if (raf) cancelAnimationFrame(raf);
     var start = null;

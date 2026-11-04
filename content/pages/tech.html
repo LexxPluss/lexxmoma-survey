@@ -136,7 +136,7 @@
       var r = fe.getBoundingClientRect(); return r.bottom > 0 && r.top < parent.innerHeight;
     } catch (e) { return true; }
   }
-  var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches, t0 = performance.now();
+  var still = false, t0 = performance.now();   // Windows の「アニメーション効果」がオフ（＝動きを減らす設定）の会社のパソコンでも動かす。動き自体が見せたい内容のため
   draw(0);
   if (!still) (function loop(now) { if (onScreen()) draw((now - t0) / 1000); requestAnimationFrame(loop); })(t0);
 })();

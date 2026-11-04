@@ -245,7 +245,8 @@
     drawProg();
   }
   if (!sim && !RECORD) useVideo();
-  if (sim && !RECORD && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) requestAnimationFrame(frame);
+  // Windows の「アニメーション効果」がオフ（＝動きを減らす設定）の会社のパソコンでも動かす。動き自体が見せたい内容のため
+  if (sim && !RECORD) requestAnimationFrame(frame);
 
   // 大きく見る：埋め込みの枠を、アンケートのタブの中にポップアップのように出す（ブラウザの全画面にはしない）。
   // 「閉じて回答へ」・右下のボタン・Esc・外側の暗いところを押すと戻る。アンケートの画面からは window.sceneBig(true) で開く
