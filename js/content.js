@@ -148,14 +148,6 @@ var Content = (function () {
     return html;
   }
 
-  function tagClass(kind) {
-    if (kind.indexOf('構想') >= 0 || kind.indexOf('展開') >= 0) return 'tag-vision';
-    if (kind.indexOf('ヒント') >= 0) return 'tag-hint';
-    if (kind.indexOf('事例') >= 0 || kind.indexOf('特徴') >= 0 || kind.indexOf('使いどころ') >= 0) return 'tag-case';
-    if (kind.indexOf('結論') >= 0) return 'tag-vision';
-    return 'tag-other';
-  }
-
   // 上段：一般情報。「表示: 上段」のカードは、その右に補足として出す（右側の欄には出さない）
   function renderIntro(intro, side) {
     var box = document.getElementById('intro');
@@ -289,10 +281,8 @@ var Content = (function () {
     box.innerHTML = cards.map(function (c, i) {
       // 見出し・文章を先に、その下に動画・埋め込み・画像
       return '<article class="card' + (c.embed ? ' card-embed' : '') + '" data-i="' + i + '">' +
-        '<div class="card-body"><div class="card-meta">' +
-        (c.kind ? '<span class="tag ' + tagClass(c.kind) + '">' + esc(c.kind) + '</span>' : '') +
-        (c.when ? '<span class="card-when">' + esc(c.when) + '</span>' : '') +
-        '</div><h3>' + esc(c.title) + '</h3><div class="card-text">' + c.html + '</div></div>' +
+        // 区分（結論・特徴・使いどころ…）の札は出さない（見出しと重なるため）
+        '<div class="card-body">' + (c.when ? '<div class="card-meta"><span class="card-when">' + esc(c.when) + '</span></div>' : '') + '<h3>' + esc(c.title) + '</h3><div class="card-text">' + c.html + '</div></div>' +
         (c.video ? videoHtml(c) : '') +
         (c.embed ? embedHtml(c) : '') +
         (c.image && !c.embed && !c.video ? '<div class="card-img"><img src="' + esc(c.image) + '" alt="' + esc(c.title) + '" loading="' + (i < 3 ? 'eager' : 'lazy') + '"></div>' : '') +
