@@ -9,6 +9,8 @@
   * { box-sizing: border-box; }
   body { margin: 0; padding: 10px 12px; background: #fff; color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif; font-size: 13px; line-height: 1.5; }
   #stage3d { position: relative; height: 270px; border-radius: 8px; overflow: hidden; background: #f4f7fa; }
+  #stage3d .recv { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #f4f7fa; }   /* 3D を使えないときの録画 */
+  #stage3d .recnote { position: absolute; z-index: 2; left: 8px; bottom: 8px; padding: 1px 8px; border-radius: 999px; background: rgba(255,255,255,.88); color: var(--sub); font-size: .68rem; }
   #stage3d::before { content: '3D を読み込み中…'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: .8rem; }
   #stage3d canvas { display: block; position: relative; }
   #stage3d .speed { position: absolute; right: 8px; top: 6px; font-size: .7rem; color: var(--sub); background: rgba(255,255,255,.85); padding: 0 6px; border-radius: 4px; z-index: 1; }
@@ -108,8 +110,10 @@
   var PLAY_SPEED = 2;   // 再生の速さ（実時間の何倍で見せるか）
   // ==============================
 
+  if (/[?&]record=1/.test(location.search)) {   // 録画を作るときは、3D を作る前に大きさを決めておく（16:9 に近い横長）
+    var st0 = document.getElementById('stage3d'); st0.style.width = '1200px'; st0.style.height = '648px';
+  }
   var S3 = window.MomaScene ? MomaScene(document.getElementById('stage3d'), MODELS, ARM) : null;
-  if (!S3) document.getElementById('stage3d').hidden = true;
   document.getElementById('speedV').textContent = PLAY_SPEED + '倍速';
   document.getElementById('note').innerHTML = NOTES.map(function (n) { return '<li>' + n + '</li>'; }).join('');
 
@@ -195,6 +199,7 @@
       if (start == null) start = now;
       var t = Math.max(0, now - start) / 1000 * PLAY_SPEED;
       if (t > maxT + 2.5 * PLAY_SPEED) { start = now; t = 0; }   // 終わったら少し止めて、最初から繰り返す
+      if (VIDEO && sameAsVideo()) t = VIDEO.currentTime * PLAY_SPEED;   // 録画を流しているときは、録画の再生位置に合わせる
       show(t);
       if (onScreen()) raf = requestAnimationFrame(frame);
       else { raf = null; waitVisible(); }
@@ -221,11 +226,25 @@
     }, 400);
   }
 
+  /* ---------- 3D を使えない環境：同じ比較の録画（content/media/cycle-race.mp4。移動距離は初期値のとき）を流す ----------
+     会社のパソコンなどで 3D（WebGL）が止められていると、3D の部分が空のままになるため。?record=1 は録画を作るとき */
+  var RECORD = /[?&]record=1/.test(location.search), VIDEO = null, DIST0 = document.getElementById('dist').value;
+  function sameAsVideo() { return document.getElementById('dist').value === DIST0; }
+  function useVideo() {
+    if (VIDEO || RECORD) return;
+    var st = document.getElementById('stage3d'), v = document.createElement('video');
+    v.muted = true; v.loop = true; v.autoplay = true; v.preload = 'auto'; v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+    v.poster = '../media/cycle-race.jpg?v=1'; v.src = '../media/cycle-race.mp4?v=1'; v.className = 'recv';
+    st.insertBefore(v, st.firstChild); st.classList.add('is-video');
+    var note = document.createElement('span'); note.className = 'recnote'; note.textContent = '3D を表示できない環境のため録画を再生しています'; st.appendChild(note);
+    VIDEO = v; var p = v.play(); if (p && p.catch) p.catch(function () { });
+  }
   document.getElementById('dist').addEventListener('input', build);
   document.getElementById('count').addEventListener('input', build);
   document.getElementById('play').addEventListener('click', play);
+  if (!S3) useVideo();
   build();
-  if (!still) play();
+  if (!still && !RECORD) play();
 
   // 大きく見る：埋め込みの枠を、アンケートのタブの中いっぱいに広げる（ブラウザの全画面にはしない）。もう一度押すか Esc で戻る
   (function () {

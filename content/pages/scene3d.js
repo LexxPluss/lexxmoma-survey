@@ -18,6 +18,8 @@ window.FactoryScene = function (host, ui) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   host.appendChild(renderer.domElement);
+  // 途中で 3D が使えなくなったとき（グラフィックの不具合など）は、使う側へ知らせる（録画に切り替える）
+  renderer.domElement.addEventListener('webglcontextlost', function (e) { e.preventDefault(); if (ui && ui.lost) ui.lost(); });
   var scene = new THREE.Scene();
   scene.background = new THREE.Color('#eef2f5');
   var camera = new THREE.PerspectiveCamera(32, 1.6, 0.1, 300);
@@ -736,6 +738,7 @@ window.FactoryScene = function (host, ui) {
   if (ui && ui.view) ui.view(-1);
 
   return {
+    canvas: renderer.domElement,
     names: cells.map(function (c) { return c.name; }),
     focus: focus,
     zoom: zoom,

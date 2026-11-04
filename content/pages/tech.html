@@ -10,6 +10,7 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; background: #fff; color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif; }
   #stage { position: relative; height: 420px; overflow: hidden; background: linear-gradient(#f4f7fa, #e9eef2); border-radius: 8px; }
+  #stage.is-flat::before { display: none; }
   #stage::before { content: '3D を読み込み中…'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; }
   #stage canvas { display: block; position: relative; }
   #lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
@@ -40,8 +41,16 @@
 (function () {
   var host = document.getElementById('stage'), svg = document.getElementById('lines');
   var V3 = function (x, y, z) { return new THREE.Vector3(x || 0, y || 0, z || 0); };
+  // 3D を使えない環境（会社のパソコンで WebGL が止められているなど）では、同じ4分類の平らな図を出す
+  function flat() {
+    host.innerHTML = '<img src="../images/fig-tech.svg?v=1" alt="Q5-1 の各行を、連携・移動・AI・手・腕の4つに分け、LexxMoMa のどこに関わるかを示した図" style="display:block;width:100%;height:auto">';
+    host.style.height = 'auto'; host.style.background = '#fff'; host.classList.add('is-flat');
+    var cap = document.querySelector('.cap'); if (cap) cap.hidden = true;   // 図の中に同じ説明がある
+  }
   var renderer;
-  try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); } catch (e) { return; }
+  if (!window.THREE || !window.MomaModel) { flat(); return; }
+  try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); } catch (e) { flat(); return; }
+  renderer.domElement.addEventListener('webglcontextlost', function (e) { e.preventDefault(); flat(); });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.shadowMap.enabled = true;
   host.insertBefore(renderer.domElement, svg);

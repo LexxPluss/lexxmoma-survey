@@ -57,6 +57,9 @@
   .fs svg { width: 20px; height: 20px; }
   body.is-big { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
   body.is-big #stage { flex: 1; height: auto; }
+  #recv { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #eef2f5; }   /* 3D を使えないときの録画 */
+  #stage.is-video #zoom { display: none; }
+  #stage.is-video { cursor: default; }
   /* 大きく見るときの上の帯（見出しと「閉じて回答へ」） */
   #bigbar { display: none; }
   body.is-big #bigbar { display: flex; flex: none; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; }
@@ -75,7 +78,7 @@
 <script src="vendor/three.min.js?r128"></script>
 <script src="moma-model.js?v=2"></script>
 <script src="supply-model.js?v=2"></script>
-<script src="scene3d.js?v=34"></script>
+<script src="scene3d.js?v=35"></script>
 <script>
   var SPEED = 3;   // 再生の速さ（実時間の何倍で見せるか）
   // 寄ったあと別の表示に切り替える使いどころ（今は無し。⑤の部品供給は、詳しい表示と同じモデルを工場の中に置いている）
@@ -111,7 +114,7 @@
     try { if (i >= 0 && window.parent !== window) parent.postMessage({ type: 'usecase-view', i: i, names: names }, location.origin); } catch (e) { }
   }
   // 見る人が視点を動かしても、見て回るのは止めない（次の使いどころへ移ると、視点は元に戻る）
-  var sim = window.FactoryScene ? FactoryScene($('stage'), { view: function (i) { view(i); } }) : null;
+  var sim = window.FactoryScene ? FactoryScene($('stage'), { view: function (i) { view(i); }, lost: function () { useVideo(); } }) : null;
   var touchDev = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
   $('hint').textContent = touchDev ? '横にスワイプで回す・＋－で拡大' : 'ドラッグで回す・右ドラッグでずらす・クリック後ホイールで拡大';
   // ＋・－・元に戻す：詳しい表示を出しているときは、そちらの視点を動かす
@@ -123,8 +126,10 @@
     } catch (err) { }
     if (z === 'reset') sim.reset(); else sim.zoom(z === 'in' ? 0.8 : 1.25);
   });
-  if (sim) {
-    names = sim.names;
+  // 3D が使えないときに出す名前（scene3d.js の使いどころの名前と同じにする）
+  var NAMES = ['研削・切削設備への部品設置', '板金溶接工程への部品設置', '検査機への部品投入', '部品のセットパック', '生産ライン横の部品供給'];
+  (function () {
+    names = sim ? sim.names : NAMES;
     ['工場全体'].concat(names).forEach(function (n, k) {
       var b = document.createElement('button'); b.type = 'button'; b.textContent = n;
       b.addEventListener('click', function () { go(k - 1); });
@@ -138,7 +143,7 @@
       $('prog').querySelector('.segs').appendChild(sg);
     });
     view(-1);
-  }
+  })();
   var TOTAL = TOUR.reduce(function (a, t) { return a + t[1]; }, 0);
   // 止める・再開：止めている間は、今の使いどころを見続ける（中の動きは続く）。別の使いどころを選んでも止めたまま
   var paused = false;
@@ -164,7 +169,8 @@
   }
   function go(i) {                          // ボタンや札で選んだところから、また順に見て回る
     tourAt = Math.max(0, TOUR.findIndex(function (t) { return t[0] === i; }));
-    sim.focus(i); view(i);
+    if (VIDEO) VIDEO.currentTime = START[tourAt] + 0.01; else if (sim) sim.focus(i);
+    view(i);
   }
   // 詳しい表示が1回分の手順を終えたら、次へ
   window.addEventListener('message', function (e) {
@@ -183,10 +189,13 @@
       return r.bottom > 0 && r.top < parent.innerHeight;
     } catch (e) { return true; }
   }
-  var last = null;
+  var last = null, slow = { n: 0, sum: 0 };
   function frame(now) {
+    if (VIDEO) return;
     if (onScreen()) {
       if (last != null) {
+        // 最初の90コマがとても遅い（1コマ0.12秒超＝8コマ/秒未満）なら、3D が重すぎる環境とみて録画に切り替える
+        if (slow.n < 90) { slow.sum += (now - last) / 1000; if (++slow.n === 90 && slow.sum / 90 > 0.12) { useVideo(); return; } }
         var dt = Math.min(0.1, (now - last) / 1000);
         sim.tick(dt * SPEED, dt);
         if (!paused && (tourT += dt) > TOUR[tourAt][1]) next();
@@ -196,7 +205,47 @@
     } else last = null;
     requestAnimationFrame(frame);
   }
-  if (sim && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) requestAnimationFrame(frame);
+  // ?record=1：3D を使えない環境向けの録画を作るとき。自分では動かさず、外から1コマずつ進める
+  var RECORD = /[?&]record=1/.test(location.search);
+
+  /* ---------- 3D を使えない・重すぎる環境：同じ見学の録画（content/media/scene-tour.mp4）を流す ----------
+     会社のパソコンなどで 3D（WebGL）が止められていると、3D の部分が空のままになるため。
+     名前・メッセージ・進み具合のバー・止める／再開・使いどころのボタンは、録画の再生位置に合わせて今までどおり動く */
+  var VIDEO = null, START = [];
+  TOUR.reduce(function (a, t, k) { START[k] = a; return a + t[1]; }, 0);
+  function useVideo() {
+    if (VIDEO || RECORD) return;
+    var v = document.createElement('video');
+    v.id = 'recv'; v.muted = true; v.loop = true; v.autoplay = true; v.preload = 'auto';
+    v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+    v.poster = '../media/scene-tour.jpg?v=1'; v.src = '../media/scene-tour.mp4?v=1';
+    var st = $('stage'); st.insertBefore(v, st.firstChild); st.classList.add('is-video');
+    if (sim && sim.canvas) sim.canvas.style.display = 'none';
+    [].forEach.call(document.querySelectorAll('.tag3d'), function (t) { t.style.display = 'none'; });
+    $('hint').textContent = 'この環境では 3D を表示できないため、録画を再生しています';
+    VIDEO = v;
+    var p = v.play(); if (p && p.catch) p.catch(function () { });
+    go(TOUR[tourAt][0]);
+    v.addEventListener('timeupdate', syncVideo);   // 画面の書き換えが止まっていても、再生位置に合わせて進める
+    requestAnimationFrame(videoFrame);
+  }
+  function videoFrame() { syncVideo(); requestAnimationFrame(videoFrame); }
+  function syncVideo() {
+    var v = VIDEO;
+    if (!onScreen()) { if (!v.paused) v.pause(); }
+    else if (v.paused) { var p = v.play(); if (p && p.catch) p.catch(function () { }); }
+    var t = v.currentTime, k = tourAt;
+    if (paused) {                          // 止めている間は、今の使いどころの区間をくり返す
+      if (t < START[k] || t >= START[k] + TOUR[k][1] - 0.05) v.currentTime = START[k] + 0.01;
+    } else {
+      var nk = 0; while (nk < TOUR.length - 1 && t >= START[nk + 1]) nk++;
+      if (nk !== k) { tourAt = nk; view(TOUR[nk][0]); }
+    }
+    tourT = Math.max(0, v.currentTime - START[tourAt]);
+    drawProg();
+  }
+  if (!sim && !RECORD) useVideo();
+  if (sim && !RECORD && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) requestAnimationFrame(frame);
 
   // 大きく見る：埋め込みの枠を、アンケートのタブの中にポップアップのように出す（ブラウザの全画面にはしない）。
   // 「閉じて回答へ」・右下のボタン・Esc・外側の暗いところを押すと戻る。アンケートの画面からは window.sceneBig(true) で開く
