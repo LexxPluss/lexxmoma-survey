@@ -99,7 +99,7 @@ window.SURVEY_FORM = {
      "kind": "question",
      "id": 415563311,
      "type": "paragraph",
-     "title": "Q2-2 その理由をお答えください",
+     "title": "Q2-2 良いと思った点や選択した理由をお答えください",
      "help": "",
      "entry": 1069988039,
      "required": true,
